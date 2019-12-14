@@ -205,11 +205,11 @@ summary {
 <h3>Data Imported</h3>
 <p>The data for this analysis is stored at <a href="%22https://data.world/makeovermonday/2019w50/%22">data.world</a>. The folks at data.world were kind enough to provide code to download the data. Let’s read the data in using their code. This code snippet will depend on the <code>readxl</code> and <code>httr</code> libraries.</p>
 <pre><code>## Response [https://download.data.world/file_download/makeovermonday/2019w50/Top%2030%20US%20fast%20food%20chains.xlsx?auth=eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJwcm9kLXVzZXItY2xpZW50OnBpY2tsZXMxOTg0IiwiaXNzIjoiYWdlbnQ6cGlja2xlczE5ODQ6OmQ1MzBjMjZjLWM0M2ItNDBlZC05MTc1LWIzMWNhZjUyZjliYyIsImlhdCI6MTU3NjA0MDEwOCwicm9sZSI6WyJ1c2VyIiwidXNlcl9hcGlfYWRtaW4iLCJ1c2VyX2FwaV9yZWFkIiwidXNlcl9hcGlfd3JpdGUiXSwiZ2VuZXJhbC1wdXJwb3NlIjpmYWxzZSwidXJsIjoiMDdhMDJjYjYzY2RmMjZhYzY4NWUyYjBjNGVlMGJmNGEzNjI5ZWRhYSJ9.KDlPDF86fKIHF1pbSkPQrza5X7H2sYyzPo4Bds4g_DWr52VPzNm6blY2WCHqDsBdDVTgh5OBETXmW81R0iZoAQ]
-##   Date: 2019-12-14 14:04
+##   Date: 2019-12-14 14:09
 ##   Status: 200
 ##   Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 ##   Size: 10.1 kB
-## &lt;ON DISK&gt;  C:\Users\Owner\AppData\Local\Temp\Rtmpc973ED\file24fc2bd22945.xlsx</code></pre>
+## &lt;ON DISK&gt;  C:\Users\Owner\AppData\Local\Temp\RtmpA34ZC5\file405464ff5852.xlsx</code></pre>
 <p>With the data imported, a very quick step is to understand the structure of the data. This can be done using the <code>str</code> function the <code>base</code> library or the <code>glance</code> function from the <code>dplyr</code> library. For the purposes of this analysis, I will use the <code>str</code> function. It is simple and easy to read. In addition to understanding the structure of the data, the <code>summary</code> function will be used to understand some high level descriptive statistics.</p>
 <pre><code>## Classes 'tbl_df', 'tbl' and 'data.frame':    30 obs. of  4 variables:
 ##  $ Rank                 : num  1 2 3 4 5 6 7 8 9 10 ...
@@ -379,6 +379,7 @@ summary {
 <p>The second order of business is to determine the effect of the number of locations on sales. This will be done with a regression. At this point, it is unknown if a linear or tree regression will be used. If the linear regression requirements can be met, then linear will be used. Otherwise, a tree regression will be used. There is a large potential both regressions will be presented for nothing more than analytic enjoyment.</p>
 <div id="clustering" class="section level3">
 <h3>Clustering</h3>
+<p>Let’s just starting adding something things!</p>
 </div>
 </div>
 
