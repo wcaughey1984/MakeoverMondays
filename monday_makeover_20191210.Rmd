@@ -16,17 +16,15 @@ options(scipen = 9999)
 
 [_Monday Makeover_]("https://www.makeovermonday.co.uk/") is a weekly event in the global Tableau community I first encountered at the Tableau Conference 2019. At the very heart of _Monday Makeover_ is the prospect of teaching and learning the art of visualization using Tableau.  Each week a visualization is selected and the data used to create the data is made public. _Monday Makeover_ participants are invited to create new visualizations with the data. These visualizations are reviewed and discussed by two Tableau experts during the week. Additionally, these Tableau visuals are made public for download and review for anyone interested in how the visuals were built.
 
-As an R programmer, and a statistician, _Monday Makeovers_ were an exciting enterprise. As a 'noob', using gaming terms, I found myself excited about the idea of visualizing data in Tableau. My excitement to visualize in `R` also grew. I spent more time learning about visualizing with libraries like `ggplot2` and `lattice`. Interestingly enough, I began to ask a question: "Well, what next?". I struggled with this question for a few weeks and just moved on to the next visual. 
-
-As I looked at visuals I, and others created, I found myself asking statistical questions."Is that relationship significant?" or "How many clusters can I confidently say exist when understanding the variances within groups?" flooded my mind. I soon realized I now had a weekly data set to not only visualize, but ask additional questions and practice statistical methods.  
-
-With that back drop, I want to thank the folks at _Monday Makeover_ for getting the ball rolling. I am excited to see what methods I can start to apply to new visuals I get to make. 
+As an R programmer, and a statistician, _Monday Makeovers_ provide more than an arena practice of visualizations. They provide practice to explore statistical, machine learning, and data science methods. Therefore, in the current post, the weekly _Monday Makeover_ will not only be visualized, but some statistical model will be applied as well.
 
 ## Biggest Fast Food Chains in America
 
-This weeks data set (week of 9 Dec 2019) comes from an article titled ["Ranked: Biggest Fast Food Chains in America"]("https://www.visualcapitalist.com/biggest-fast-food-chains-in-america/"). This article has a nice infographic displaying the information. This infographic presents some interest information. For instance, McDonald's is the highest ranked fast food chain by total sales (surprise, right?). One fact I caught which surprised me was the number of franchised/licensed and company units (I will just refer to them as units). I would never have thought Subway would have had more units than McDonald's. Thinking of advertisements, brand recognition, and other inputs, I would have guessed McDonald's was king of units. 
+This weeks data set (week of 9 Dec 2019) comes from an article titled ["Ranked: Biggest Fast Food Chains in America"]("https://www.visualcapitalist.com/biggest-fast-food-chains-in-america/"). This article has a nice infographic visualizing sales in the U.S. (2017), number of locations in the U.S., and restaurant category. To me, the story goes has a large focus on sales. There is also a comparison of franchise/license and company units. Although this comparison is nice, I wonder if there is a connection between the number of units and sales. This will be my initial visualization.
 
-## Libraries
+## Comparing Sales and Number of Locations 
+
+### Data Pre-Processing
 
 Before any data is brought it, let's chat about the libraries I will use. My go to libraries when I run `R` are `tidyverse`, `broom`, `ggplots2`, `amelia`, and `readr`. The folks at [data.world](https://www.makeovermonday.co.uk/) were kind enough to provide a code to directly import data into `R`. This import code relies on `httr` and `readxl`. For those asking the question of "why bring in both `readr` and `readxl`?" the answer is simple. `readxl` is more specialized to `xls` and `.xlsx` documents, whereas `readr` is more general. A lot times, I bring them both in to cover all my bases. `knitr` will also be added to make tables a little cleaner.
 
@@ -71,15 +69,8 @@ summary(df)
 
 ```
 
-Right of the bat, our friends at McDonald's are skewing the total sales figure. Since the mean is susceptible to outliers, there is a skew to the right. This can be visualized using something simple like a histogram. But first, let's make the units of measure for sales to be billions of dollars instead of dollars. This code snippet will depend upon `tidyverse` and `ggplot2` libraries. 
+Right off the bat, the median is less than the mean. This suggests there is a skew to the right. Most likely, this is due to the . Since the mean is susceptible to outliers, there is a skew to the right. This can be visualized using something simple like a histogram. But first, let's make the units of measure for sales to be billions of dollars instead of dollars. This code snippet will depend upon `tidyverse` and `ggplot2` libraries. 
 
-There doesn't seem to be any missing data, but to cover the bases, let's use the `missmap` function from the `Amelia` library. This plot will show where missing data exists, if any.
-
-```{r missmap}
-
-missmap(df, col = c("yellow","black"))
-
-```
 
 With no missing data, the next step is exploratory data analysis.
 
