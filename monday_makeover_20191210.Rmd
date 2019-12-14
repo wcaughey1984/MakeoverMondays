@@ -1,0 +1,196 @@
+---
+title: 'Monday Makeover: Biggest Fast Food Chains in America'
+author: "Billy Caughey"
+date: "`r format(Sys.time(), '%d %b %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+options(scipen = 9999)
+
+```
+
+## Monday Makeovers
+
+Monday Makeover is a weekly event in the global Tableau community I first encountered at the Tableau Conference 2019. Each week a new dataset is published. This dataset comes with a previous visual and how the data was previously displayed. Members of the Tableau community, and other communities, are encouraged to revisualize the data. These new visuals are published, shared, and commented on. It is a great way to share visualization skills and learning.
+
+As an R programmer, and a statistician, Monday Makeovers take a different level of excitement for me. Thinking of ways to visualize data through R libraries, like `ggplot2` or `lattice`, are exciting ways to share data. What is of most interest to me is the next level of analysis. Visualizations are fun, but I am even more interested in performing statistics and analytics. My goal in these publications is to take the analysis from descriptive to analytic. This by no means suggests visualizations are not important. To the contrary, the visualizations produced inform the potential analytics which might be performed.
+
+## Biggest Fast Food Chains in America
+
+This weeks data set (week of 9 Dec 2019) comes from an article titled ["Ranked: Biggest Fast Food Chains in America"]("https://www.visualcapitalist.com/biggest-fast-food-chains-in-america/"). This article has a nice infographic displaying the information. This infographic presents some interest information. For instance, McDonald's is the highest ranked fast food chain by total sales (surprise, right?). One fact I caught which surprised me was the number of franchised/licensed and company units (I will just refer to them as units). I would never have thought Subway would have had more units than McDonald's. Thinking of advertisements, brand recognition, and other inputs, I would have guessed McDonald's was king of units. 
+
+## Libraries
+
+Before any data is brought it, let's chat about the libraries which will be used. My immediate go to libraries when I run R are `tidyverse`, `broom`, `ggplots2`, and `readr`. Using the code to pull the data, I will add `httr` and `readxl` to this list. Yes, it might seem weird to have `readr` and `readxl` both running, but we'll let it slide at this point. `knitr` will also be added to make tables a little cleaner.
+
+```{r libraries}
+
+library(tidyverse)
+library(broom)
+library(ggplot2)
+library(readr)
+library(readxl)
+library(httr)
+library(knitr)
+library(scales)
+
+```
+
+
+## Data Pre-Processing
+
+The first major step in any analysis is data pre-processing. In this step, the data is imported, and cleaned. Part of the cleaning process will be additional feature creation.
+
+### Data Imported
+
+The data for this analysis is stored at [data.world]("https://data.world/makeovermonday/2019w50/"). The folks at data.world were kind enough to provide code to download the data. Let's read the data in using their code. This code snippet will depend on the `readxl` and `httr` libraries.
+
+```{r read data in}
+
+GET("https://query.data.world/s/42hqvpcooejjm6ao6uwqvvduedwrof", write_disk(tf <- tempfile(fileext = ".xlsx")))
+df <- read_excel(tf)
+
+```
+
+With the data imported, a very quick step is to understand the structure of the data. This can be done using the `str` function the `base` library or the `glance` function from the `dplyr` library. For the purposes of this analysis, I will use the `str` function. It is simple and easy to read. In addition to understanding the structure of the data, the `summary` function will be used to understand some high level descriptive statistics.
+
+```{r structure}
+
+# Structure of Data
+str(df)
+
+# Summary of Data
+summary(df)
+
+```
+
+Right of the bat, our friends at McDonald's are skewing the total sales figure. Since the mean is susceptible to outliers, there is a skew to the right. This can be visualized using something simple like a histogram. But first, let's make the units of measure for sales to be billions of dollars instead of dollars. This code snippet will depend upon `tidyverse` and `ggplot2` libraries. 
+
+```{r histogram of total sales}
+
+# Changing sales units from dollars to billions of dollars
+
+df <- df %>%
+    mutate(`Sales (U.S., 2017)` = `Sales (U.S., 2017)` / 1000000000)
+
+df %>%
+    ggplot(aes(x = `Sales (U.S., 2017)`)) +
+    geom_density() +
+    xlab("Sales (in Billions, $)") +
+    theme(axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank()) 
+
+```
+
+Essentially, this density plot shows what we originally new about sales. A lot of the fast food chains are close to each other with McDonald's as the outlier. This does beg the question: how similar are the densities of each chain category? In order to do answer this question, feature creature will be used. Conveniently enough, the original infographic provides the categorical information to be able to identify these fast food chains. 
+
+In this case, there are two main ways to create this category feature. The first is a very large `ifelse` statement in a `mutate` call. I've never been a fan of that. What I am more a fan of creating a function then calling `sapply` in the `mutate` call. I think the reason why I like this better is I can adjust the function without having to get into the piped data from line to line.
+
+```{r category of fast food chain}
+
+restaurant_category <- function(x){
+    if(x %in% c("McDonald's","Wendy's","Burger King","Sonic Drive-In","Jack in the Box","Carl's Jr.",
+                "Whataburger","Hardee's","Five Guys","Culver's")){
+        return("hamburger")
+    } else if(x %in% c("Zaxby's","KFC","Popeye's","Wingstop","Chick-fil-A","Bojangles'")){
+        return("chicken")
+    } else if(x %in% c("Subway","Panera Bread","Arby's","Jimmy John's")){
+        return("sandwich") 
+    } else if(x %in% c("Little Caesars","Domino's","Pizza Hut","Papa John's")) {
+        return("pizza")
+    } else if(x %in% c("Taco Bell","Chipotle","Panda Express")){
+        return("tex-mex or asian")
+    } else {
+        return("snack")
+    }
+}
+
+df <- df %>%
+    mutate(restaurant_type = sapply(Chain, restaurant_category))
+
+```
+
+With `restaurant_type` now in the data set, a density informed by `restaurant_type` can be added. Additionally, a summary table with mean, standard deviation, median, and IQR will be added as well. It should be noted, these densities are only composed of a few data points. In most cases, we would want more data to inform density plots. This is why we include the summary table with the density plot.
+
+```{r density with restaurant_type}
+
+df %>%
+    ggplot(aes(x = `Sales (U.S., 2017)`, color = restaurant_type)) +
+    geom_density() +
+    xlab("Sales (in Billions, $)") +
+    theme(axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank()) 
+
+
+df %>%
+    group_by(restaurant_type) %>%
+    summarize(`Sample Size` = n(),
+              `Mean Sales` = mean(`Sales (U.S., 2017)`, na.rm = TRUE),
+              `SD Sales` = sd(`Sales (U.S., 2017)`, na.rm = TRUE),
+              `Median Sales` = median(`Sales (U.S., 2017)`, na.rm = TRUE),
+              `IQR Sales` = IQR(`Sales (U.S., 2017)`, na.rm = TRUE)) %>%
+    kable(label = "Summary Table")
+
+```
+
+A few insights. McDonald's is a stereotypical outlier. When McDonald's is removed from the data set, the summary table has a significant change (see table below). In fact, hamburger restaurants only have a higher sales than the chicken category, on average. When the median is considered, hamburgers have the lowest sales of any restaurant category. 
+
+```{r without mcdonalds}
+
+df %>%
+    filter(!(Chain %in% c("McDonald's"))) %>%
+    group_by(restaurant_type) %>%
+    summarize(`Sample Size` = n(),
+              `Mean Sales` = mean(`Sales (U.S., 2017)`, na.rm = TRUE),
+              `SD Sales` = sd(`Sales (U.S., 2017)`, na.rm = TRUE),
+              `Median Sales` = median(`Sales (U.S., 2017)`, na.rm = TRUE),
+              `IQR Sales` = IQR(`Sales (U.S., 2017)`, na.rm = TRUE)) %>%
+    kable(label = "Summary Table, without McDonald's")
+
+```
+
+Another insight is extremely high cost of the snack category due to coffee. Starbucks and Dunkin' Doughnuts are two of the largest distributors of coffee in the country. Given their specialty is coffee, the have less competition from the other restaurants. For instance, the snack category probably has little, if any, competition from the pizza category. Some of the members of the hamburgers, chicken, and sandwich category might compete with snack if the consumer is interested in something more than coffee and a baked good. 
+
+### Monday Makeover Plot
+
+The best way in `R` to make a nice visual of this data set, which will also lead to the analysis, is using a simple scatter plot. The scatter plot will be sales (y-axis) versus number of locations (x-axis). The dots will be colored by the restaurant category. 
+
+```{r scatter plot}
+
+df %>%
+    ggplot(aes(y = `Sales (U.S., 2017)`, 
+               x = `# of Locations (U.S.)`,
+               color = restaurant_type,)) +
+    geom_point(size = 2.5, alpha = 0.5) +
+    labs(y = "Sales (U.S., 2017, in Billons)",
+         color = "Restaurant Type") +
+    scale_x_continuous(label = comma) +
+    theme(axis.title.x = element_text(size = 16),
+          axis.text.x = element_text(size = 12),
+          axis.title.y = element_text(size = 16),
+          axis.text.y = element_text(size = 12))
+
+```
+
+
+This plot has some interesting results. First, there appears to be a somewhat linear trend. There are a few outliers which might shift the trend, but for the most part there is a linear trend. This trend suggests, to a point, the number of locations could be a predictor of sales (in 2017). There is probably more information to add to this model, but for these purpose, this will suffice.
+
+The next (potential) result is there appears to be three groups. The reader is invited to try to find these three groups (results will be provided later!). The best way to see these groups is to take imaginary lines and group clusters together. 
+
+The last result, and something not investigated further, is there are definitely outliers in the number of locations. Interestingly enough, these outliers do not have high sales. There is a potential these points will balance out the McDonald's outlier.
+
+## Analysis of Data
+
+Okay, we are finally to the point of the write up that I am the most excited about. We are going to some math, stats, a touch of unsupervising learning. Due the size of the data, the methods used will be relatively simple, but explored thoroughly. 
+
+The first order of business is to understand potential clustering. Even those restuarants are categorized, there is potential for categorizing groups in different ways. This will require the use of k-means or hierarcherical clustering. 
+
+The second order of business is to determine the effect of the number of locations on sales. This will be done with a regression. At this point, it is unknown if a linear or tree regression will be used. If the linear regression requirements can be met, then linear will be used. Otherwise, a tree regression will be used. There is a large potential both regressions will be presented for nothing more than analytic enjoyment.
+
+### Clustering
+
