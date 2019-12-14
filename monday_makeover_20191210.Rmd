@@ -197,3 +197,5 @@ The second order of business is to determine the effect of the number of locatio
 ### Clustering
 
 Let's just starting adding something things!
+
+We gonna try this on my mac now!
