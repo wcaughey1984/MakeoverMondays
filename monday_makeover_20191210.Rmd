@@ -6,19 +6,21 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 options(scipen = 9999)
-
-#this is something new!
 
 ```
 
 ## Monday Makeovers
 
-Monday Makeover is a weekly event in the global Tableau community I first encountered at the Tableau Conference 2019. Each week a new dataset is published. This dataset comes with a previous visual and how the data was previously displayed. Members of the Tableau community, and other communities, are encouraged to revisualize the data. These new visuals are published, shared, and commented on. It is a great way to share visualization skills and learning.
+[_Monday Makeover_]("https://www.makeovermonday.co.uk/") is a weekly event in the global Tableau community I first encountered at the Tableau Conference 2019. At the very heart of _Monday Makeover_ is the prospect of teaching and learning the art of visualization using Tableau.  Each week a visualization is selected and the data used to create the data is made public. _Monday Makeover_ participants are invited to create new visualizations with the data. These visualizations are reviewed and discussed by two Tableau experts during the week. Additionally, these Tableau visuals are made public for download and review for anyone interested in how the visuals were built.
 
-As an R programmer, and a statistician, Monday Makeovers take a different level of excitement for me. Thinking of ways to visualize data through R libraries, like `ggplot2` or `lattice`, are exciting ways to share data. What is of most interest to me is the next level of analysis. Visualizations are fun, but I am even more interested in performing statistics and analytics. My goal in these publications is to take the analysis from descriptive to analytic. This by no means suggests visualizations are not important. To the contrary, the visualizations produced inform the potential analytics which might be performed.
+As an R programmer, and a statistician, _Monday Makeovers_ were an exciting enterprise. As a 'noob', using gaming terms, I found myself excited about the idea of visualizing data in Tableau. My excitement to visualize in `R` also grew. I spent more time learning about visualizing with libraries like `ggplot2` and `lattice`. Interestingly enough, I began to ask a question: "Well, what next?". I struggled with this question for a few weeks and just moved on to the next visual. 
+
+As I looked at visuals I, and others created, I found myself asking statistical questions."Is that relationship significant?" or "How many clusters can I confidently say exist when understanding the variances within groups?" flooded my mind. I soon realized I now had a weekly data set to not only visualize, but ask additional questions and practice statistical methods.  
+
+With that back drop, I want to thank the folks at _Monday Makeover_ for getting the ball rolling. I am excited to see what methods I can start to apply to new visuals I get to make. 
 
 ## Biggest Fast Food Chains in America
 
@@ -26,13 +28,14 @@ This weeks data set (week of 9 Dec 2019) comes from an article titled ["Ranked: 
 
 ## Libraries
 
-Before any data is brought it, let's chat about the libraries which will be used. My immediate go to libraries when I run R are `tidyverse`, `broom`, `ggplots2`, and `readr`. Using the code to pull the data, I will add `httr` and `readxl` to this list. Yes, it might seem weird to have `readr` and `readxl` both running, but we'll let it slide at this point. `knitr` will also be added to make tables a little cleaner.
+Before any data is brought it, let's chat about the libraries I will use. My go to libraries when I run `R` are `tidyverse`, `broom`, `ggplots2`, `amelia`, and `readr`. The folks at [data.world](https://www.makeovermonday.co.uk/) were kind enough to provide a code to directly import data into `R`. This import code relies on `httr` and `readxl`. For those asking the question of "why bring in both `readr` and `readxl`?" the answer is simple. `readxl` is more specialized to `xls` and `.xlsx` documents, whereas `readr` is more general. A lot times, I bring them both in to cover all my bases. `knitr` will also be added to make tables a little cleaner.
 
 ```{r libraries}
 
 library(tidyverse)
 library(broom)
 library(ggplot2)
+library(Amelia)
 library(readr)
 library(readxl)
 library(httr)
@@ -41,10 +44,9 @@ library(scales)
 
 ```
 
-
 ## Data Pre-Processing
 
-The first major step in any analysis is data pre-processing. In this step, the data is imported, and cleaned. Part of the cleaning process will be additional feature creation.
+The first major step in any analysis is data pre-processing. In this step, the data is imported, and cleaned. It should be noted there will be no feature creation at this step. I prefer to add new features in the exploratory data analysis step.
 
 ### Data Imported
 
@@ -57,12 +59,12 @@ df <- read_excel(tf)
 
 ```
 
-With the data imported, a very quick step is to understand the structure of the data. This can be done using the `str` function the `base` library or the `glance` function from the `dplyr` library. For the purposes of this analysis, I will use the `str` function. It is simple and easy to read. In addition to understanding the structure of the data, the `summary` function will be used to understand some high level descriptive statistics.
+With the data imported, a very quick step is to understand the structure of the data. This can be done using the `str` function the `base` library or the `glimpse` function from the `dplyr` library. For the purposes of this analysis, I will use the `glimpse` function. It is simple and easy to read. Also, I'm a big fan of the tidyverse (shout out to Hadley Wickam!). In addition to understanding the structure of the data, the `summary` function will be used to understand some high level descriptive statistics.
 
 ```{r structure}
 
 # Structure of Data
-str(df)
+glimpse(df)
 
 # Summary of Data
 summary(df)
@@ -70,6 +72,20 @@ summary(df)
 ```
 
 Right of the bat, our friends at McDonald's are skewing the total sales figure. Since the mean is susceptible to outliers, there is a skew to the right. This can be visualized using something simple like a histogram. But first, let's make the units of measure for sales to be billions of dollars instead of dollars. This code snippet will depend upon `tidyverse` and `ggplot2` libraries. 
+
+There doesn't seem to be any missing data, but to cover the bases, let's use the `missmap` function from the `Amelia` library. This plot will show where missing data exists, if any.
+
+```{r missmap}
+
+missmap(df, col = c("yellow","black"))
+
+```
+
+With no missing data, the next step is exploratory data analysis.
+
+## Exploratory Data Analysis
+
+My very first question is what is the distribution of sales? I don't like how the data shows the figures in billions of dollars. I'm going to convert the figures units of billions of dollars instead of dollars. Then, the distribution will be presented.
 
 ```{r histogram of total sales}
 
@@ -158,6 +174,39 @@ df %>%
 
 Another insight is extremely high cost of the snack category due to coffee. Starbucks and Dunkin' Doughnuts are two of the largest distributors of coffee in the country. Given their specialty is coffee, the have less competition from the other restaurants. For instance, the snack category probably has little, if any, competition from the pizza category. Some of the members of the hamburgers, chicken, and sandwich category might compete with snack if the consumer is interested in something more than coffee and a baked good. 
 
+One other question I have is distribution is the number of locations in the United States. Similiar to the density plot performed on sales, a density plot is presented for number of locations. The follow-up quetion is how is the density different for restaurant types?
+
+```{r number of locations}
+
+df %>%
+    ggplot(aes(x = `# of Locations (U.S.)`)) +
+    geom_density() +
+    xlab("Locations (in U.S.)") +
+    scale_x_continuous(label = comma) +
+    theme(axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank())
+
+df %>%
+    ggplot(aes(x = `# of Locations (U.S.)`, color = restaurant_type)) +
+    geom_density() +
+    xlab("Locations (in U.S.)") +
+    scale_x_continuous(label = comma) +
+    theme(axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank())
+
+df %>%
+    group_by(restaurant_type) %>%
+    summarize(`Sample Size` = n(),
+              `Mean Locs` = mean(`# of Locations (U.S.)`, na.rm = TRUE),
+              `SD Locs` = sd(`# of Locations (U.S.)`, na.rm = TRUE),
+              `Median Locs` = median(`# of Locations (U.S.)`, na.rm = TRUE),
+              `IQR Locs` = IQR(`# of Locations (U.S.)`, na.rm = TRUE)) %>%
+    kable(label = "Summary Table, Number of Locations")
+
+```
+
 ### Monday Makeover Plot
 
 The best way in `R` to make a nice visual of this data set, which will also lead to the analysis, is using a simple scatter plot. The scatter plot will be sales (y-axis) versus number of locations (x-axis). The dots will be colored by the restaurant category. 
@@ -167,7 +216,7 @@ The best way in `R` to make a nice visual of this data set, which will also lead
 df %>%
     ggplot(aes(y = `Sales (U.S., 2017)`, 
                x = `# of Locations (U.S.)`,
-               color = restaurant_type,)) +
+               color = restaurant_type)) +
     geom_point(size = 2.5, alpha = 0.5) +
     labs(y = "Sales (U.S., 2017, in Billons)",
          color = "Restaurant Type") +
