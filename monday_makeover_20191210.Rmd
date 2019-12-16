@@ -12,11 +12,13 @@ options(scipen = 9999)
 
 ```
 
-## Monday Makeovers
+## Introduction
 
-[_Monday Makeover_]("https://www.makeovermonday.co.uk/") is a weekly event in the global Tableau community I first encountered at the Tableau Conference 2019. At the very heart of _Monday Makeover_ is the prospect of teaching and learning the art of visualization using Tableau.  Each week a visualization is selected and the data used to create the data is made public. _Monday Makeover_ participants are invited to create new visualizations with the data. These visualizations are reviewed and discussed by two Tableau experts during the week. Additionally, these Tableau visuals are made public for download and review for anyone interested in how the visuals were built.
+As an R programmer, and statistician, I like to continuously be improving. This requires participating in [RPubs]("http://www.rpubs.com/"), taking online courses, participating in meet up groups, and many other avenues. One which came up recently that I did not know of before is [_Monday Makeover_]("https://www.makeovermonday.co.uk/").
 
-As an R programmer, and a statistician, _Monday Makeovers_ provide more than an arena practice of visualizations. They provide practice to explore statistical, machine learning, and data science methods. Therefore, in the current post, the weekly _Monday Makeover_ will not only be visualized, but some statistical model will be applied as well.
+_Monday Makeover_ is a weekly event in the global Tableau community I first encountered at the Tableau Conference 2019. At the very heart of _Monday Makeover_ is the prospect of teaching and learning the art of visualization using Tableau.  Each week a visualization is selected and the data used to create the data is made public. _Monday Makeover_ participants are invited to create new visualizations with the data. These visualizations are reviewed and discussed by two Tableau experts during the week. Additionally, these Tableau visuals are made public for download and review for anyone interested in how the visuals were built.
+
+In this post, I will participate in revisualizing the post for _Monday Makeover_. Additionally, I will be making a statistical analysis as well.
 
 ## Biggest Fast Food Chains in America
 
@@ -24,9 +26,7 @@ This weeks data set (week of 9 Dec 2019) comes from an article titled ["Ranked: 
 
 ## Comparing Sales and Number of Locations 
 
-### Data Pre-Processing
-
-Before any data is brought it, let's chat about the libraries I will use. My go to libraries when I run `R` are `tidyverse`, `broom`, `ggplots2`, `amelia`, and `readr`. The folks at [data.world](https://www.makeovermonday.co.uk/) were kind enough to provide a code to directly import data into `R`. This import code relies on `httr` and `readxl`. For those asking the question of "why bring in both `readr` and `readxl`?" the answer is simple. `readxl` is more specialized to `xls` and `.xlsx` documents, whereas `readr` is more general. A lot times, I bring them both in to cover all my bases. `knitr` will also be added to make tables a little cleaner.
+In reviewing this week's article, I find myself asking if there is an association between sales and number of locations. As such, I am going to be building this visual to see if there is a potential to make a statistical statement.
 
 ```{r libraries}
 
@@ -39,67 +39,30 @@ library(readxl)
 library(httr)
 library(knitr)
 library(scales)
-
-```
-
-## Data Pre-Processing
-
-The first major step in any analysis is data pre-processing. In this step, the data is imported, and cleaned. It should be noted there will be no feature creation at this step. I prefer to add new features in the exploratory data analysis step.
-
-### Data Imported
-
-The data for this analysis is stored at [data.world]("https://data.world/makeovermonday/2019w50/"). The folks at data.world were kind enough to provide code to download the data. Let's read the data in using their code. This code snippet will depend on the `readxl` and `httr` libraries.
-
-```{r read data in}
+library(tree)
+library(rpart.plot)
+library(rattle)
 
 GET("https://query.data.world/s/42hqvpcooejjm6ao6uwqvvduedwrof", write_disk(tf <- tempfile(fileext = ".xlsx")))
 df <- read_excel(tf)
 
 ```
 
-With the data imported, a very quick step is to understand the structure of the data. This can be done using the `str` function the `base` library or the `glimpse` function from the `dplyr` library. For the purposes of this analysis, I will use the `glimpse` function. It is simple and easy to read. Also, I'm a big fan of the tidyverse (shout out to Hadley Wickam!). In addition to understanding the structure of the data, the `summary` function will be used to understand some high level descriptive statistics.
+Now that's the data is imported, I usually take a `glimpse` (yes, that is a pun on a function in `R`). Then I like to see if there is any missing data.
 
 ```{r structure}
 
 # Structure of Data
 glimpse(df)
 
-# Summary of Data
-summary(df)
+# Missingness Map
+missmap(df, col = c("Yellow","Black"))
 
 ```
 
-Right off the bat, the median is less than the mean. This suggests there is a skew to the right. Most likely, this is due to the . Since the mean is susceptible to outliers, there is a skew to the right. This can be visualized using something simple like a histogram. But first, let's make the units of measure for sales to be billions of dollars instead of dollars. This code snippet will depend upon `tidyverse` and `ggplot2` libraries. 
+With no missing data, I am ready to plot sales against number of locations. This will be done using the `ggplot2` library. Before this plot is built, I will classify each restaurant into a type (using the article as a reference) and color each data point according to it's type. 
 
-
-With no missing data, the next step is exploratory data analysis.
-
-## Exploratory Data Analysis
-
-My very first question is what is the distribution of sales? I don't like how the data shows the figures in billions of dollars. I'm going to convert the figures units of billions of dollars instead of dollars. Then, the distribution will be presented.
-
-```{r histogram of total sales}
-
-# Changing sales units from dollars to billions of dollars
-
-df <- df %>%
-    mutate(`Sales (U.S., 2017)` = `Sales (U.S., 2017)` / 1000000000)
-
-df %>%
-    ggplot(aes(x = `Sales (U.S., 2017)`)) +
-    geom_density() +
-    xlab("Sales (in Billions, $)") +
-    theme(axis.title.y = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank()) 
-
-```
-
-Essentially, this density plot shows what we originally new about sales. A lot of the fast food chains are close to each other with McDonald's as the outlier. This does beg the question: how similar are the densities of each chain category? In order to do answer this question, feature creature will be used. Conveniently enough, the original infographic provides the categorical information to be able to identify these fast food chains. 
-
-In this case, there are two main ways to create this category feature. The first is a very large `ifelse` statement in a `mutate` call. I've never been a fan of that. What I am more a fan of creating a function then calling `sapply` in the `mutate` call. I think the reason why I like this better is I can adjust the function without having to get into the piped data from line to line.
-
-```{r category of fast food chain}
+```{r classify and plotting}
 
 restaurant_category <- function(x){
     if(x %in% c("McDonald's","Wendy's","Burger King","Sonic Drive-In","Jack in the Box","Carl's Jr.",
@@ -119,90 +82,8 @@ restaurant_category <- function(x){
 }
 
 df <- df %>%
-    mutate(restaurant_type = sapply(Chain, restaurant_category))
-
-```
-
-With `restaurant_type` now in the data set, a density informed by `restaurant_type` can be added. Additionally, a summary table with mean, standard deviation, median, and IQR will be added as well. It should be noted, these densities are only composed of a few data points. In most cases, we would want more data to inform density plots. This is why we include the summary table with the density plot.
-
-```{r density with restaurant_type}
-
-df %>%
-    ggplot(aes(x = `Sales (U.S., 2017)`, color = restaurant_type)) +
-    geom_density() +
-    xlab("Sales (in Billions, $)") +
-    theme(axis.title.y = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank()) 
-
-
-df %>%
-    group_by(restaurant_type) %>%
-    summarize(`Sample Size` = n(),
-              `Mean Sales` = mean(`Sales (U.S., 2017)`, na.rm = TRUE),
-              `SD Sales` = sd(`Sales (U.S., 2017)`, na.rm = TRUE),
-              `Median Sales` = median(`Sales (U.S., 2017)`, na.rm = TRUE),
-              `IQR Sales` = IQR(`Sales (U.S., 2017)`, na.rm = TRUE)) %>%
-    kable(label = "Summary Table")
-
-```
-
-A few insights. McDonald's is a stereotypical outlier. When McDonald's is removed from the data set, the summary table has a significant change (see table below). In fact, hamburger restaurants only have a higher sales than the chicken category, on average. When the median is considered, hamburgers have the lowest sales of any restaurant category. 
-
-```{r without mcdonalds}
-
-df %>%
-    filter(!(Chain %in% c("McDonald's"))) %>%
-    group_by(restaurant_type) %>%
-    summarize(`Sample Size` = n(),
-              `Mean Sales` = mean(`Sales (U.S., 2017)`, na.rm = TRUE),
-              `SD Sales` = sd(`Sales (U.S., 2017)`, na.rm = TRUE),
-              `Median Sales` = median(`Sales (U.S., 2017)`, na.rm = TRUE),
-              `IQR Sales` = IQR(`Sales (U.S., 2017)`, na.rm = TRUE)) %>%
-    kable(label = "Summary Table, without McDonald's")
-
-```
-
-Another insight is extremely high cost of the snack category due to coffee. Starbucks and Dunkin' Doughnuts are two of the largest distributors of coffee in the country. Given their specialty is coffee, the have less competition from the other restaurants. For instance, the snack category probably has little, if any, competition from the pizza category. Some of the members of the hamburgers, chicken, and sandwich category might compete with snack if the consumer is interested in something more than coffee and a baked good. 
-
-One other question I have is distribution is the number of locations in the United States. Similiar to the density plot performed on sales, a density plot is presented for number of locations. The follow-up quetion is how is the density different for restaurant types?
-
-```{r number of locations}
-
-df %>%
-    ggplot(aes(x = `# of Locations (U.S.)`)) +
-    geom_density() +
-    xlab("Locations (in U.S.)") +
-    scale_x_continuous(label = comma) +
-    theme(axis.title.y = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank())
-
-df %>%
-    ggplot(aes(x = `# of Locations (U.S.)`, color = restaurant_type)) +
-    geom_density() +
-    xlab("Locations (in U.S.)") +
-    scale_x_continuous(label = comma) +
-    theme(axis.title.y = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank())
-
-df %>%
-    group_by(restaurant_type) %>%
-    summarize(`Sample Size` = n(),
-              `Mean Locs` = mean(`# of Locations (U.S.)`, na.rm = TRUE),
-              `SD Locs` = sd(`# of Locations (U.S.)`, na.rm = TRUE),
-              `Median Locs` = median(`# of Locations (U.S.)`, na.rm = TRUE),
-              `IQR Locs` = IQR(`# of Locations (U.S.)`, na.rm = TRUE)) %>%
-    kable(label = "Summary Table, Number of Locations")
-
-```
-
-### Monday Makeover Plot
-
-The best way in `R` to make a nice visual of this data set, which will also lead to the analysis, is using a simple scatter plot. The scatter plot will be sales (y-axis) versus number of locations (x-axis). The dots will be colored by the restaurant category. 
-
-```{r scatter plot}
+    mutate(restaurant_type = sapply(Chain, restaurant_category),
+           `Sales (U.S., 2017)` = `Sales (U.S., 2017)` / 1000000000)
 
 df %>%
     ggplot(aes(y = `Sales (U.S., 2017)`, 
@@ -210,32 +91,106 @@ df %>%
                color = restaurant_type)) +
     geom_point(size = 2.5, alpha = 0.5) +
     labs(y = "Sales (U.S., 2017, in Billons)",
-         color = "Restaurant Type") +
+         color = "Restaurant Type",
+         x = "Number of Locations") +
+    ggtitle("Sales vs Number of Locations, 2017") +
     scale_x_continuous(label = comma) +
+    scale_y_continuous(label = comma) +
     theme(axis.title.x = element_text(size = 16),
           axis.text.x = element_text(size = 12),
           axis.title.y = element_text(size = 16),
-          axis.text.y = element_text(size = 12))
+          axis.text.y = element_text(size = 12),
+          plot.title = element_text(size = 20)) +
+    theme_bw()
 
 ```
 
+This plot reveals a linear association between these two fields. Interestingly enough, these types of restaurant doesn't impact the trend either. Both of these discoveries are interesting to me because they defy my own personal beliefs. With that said, this is why we do analytics. Personal beliefs are great, but once the truth is known, power is gained.
 
-This plot has some interesting results. First, there appears to be a somewhat linear trend. There are a few outliers which might shift the trend, but for the most part there is a linear trend. This trend suggests, to a point, the number of locations could be a predictor of sales (in 2017). There is probably more information to add to this model, but for these purpose, this will suffice.
+## Statistical Analysis
 
-The next (potential) result is there appears to be three groups. The reader is invited to try to find these three groups (results will be provided later!). The best way to see these groups is to take imaginary lines and group clusters together. 
+### Tree Regressions
 
-The last result, and something not investigated further, is there are definitely outliers in the number of locations. Interestingly enough, these outliers do not have high sales. There is a potential these points will balance out the McDonald's outlier.
+On first look, this trend appears linear, which would lend nicely to linear regression. With linear regression is well documented, I wanted to do something different. Natually, a tree regression came to mind. A tree regression is more robust than a linear regression and it is easier to explain. Literature for the tree regression can found in the text ["Introduction to Statistical Learning"]("http://faculty.marshall.usc.edu/gareth-james/ISL/getbook.html").
 
-## Analysis of Data
+```{r tree regression}
 
-Okay, we are finally to the point of the write up that I am the most excited about. We are going to some math, stats, a touch of unsupervising learning. Due the size of the data, the methods used will be relatively simple, but explored thoroughly. 
+mod1 <- rpart(`Sales (U.S., 2017)` ~ `# of Locations (U.S.)`, 
+              method = "anova", 
+              data = df)
 
-The first order of business is to understand potential clustering. Even those restuarants are categorized, there is potential for categorizing groups in different ways. This will require the use of k-means or hierarcherical clustering. 
+summary(mod1)
 
-The second order of business is to determine the effect of the number of locations on sales. This will be done with a regression. At this point, it is unknown if a linear or tree regression will be used. If the linear regression requirements can be met, then linear will be used. Otherwise, a tree regression will be used. There is a large potential both regressions will be presented for nothing more than analytic enjoyment.
+fancyRpartPlot(mod1)
 
-### Clustering
+```
 
-Let's just starting adding something things!
+This regression suggests two decision points. The first, is there less than 5,678 locations, suggests if this is false the restaurant has an estimated sales of 13 billion. If the organization does have less than 5.678, then it is split again. This time, the node is if there are less than 2,027 locations. If this is true, then there is an estimated 1.7 billion in sales. If the node choice is false, there is an estimated sales of 4.3 billion in sales.
 
-We gonna try this on my mac now!
+Is this a perfect analysis? Without testing the estimating power with cross validation, there really is no way to know. With that said, that is for another post! 
+
+### Linear Regression
+
+Alright, I couldn't help myself. I want to perform a linear regression as well. The assumptions will also be checked. It should be noted the output for linear regression will be different. Tree regressions will print out what the expected outcome for the outcome variable. Linear regression will produce the beta coefficients to compute the expected outcome. For kicks and giggles, the assumptions will also be checked until an assumption fails or we can show the regression satisfies all the assumptions. Also, before we continue, the names will need to be adjusted. For some reason, the "(" and ")" characters cause some grief for the `lm` function.
+
+```{r linear regression}
+
+df <- df %>%
+    rename(Sales = `Sales (U.S., 2017)`,
+           Locations = `# of Locations (U.S.)`)
+
+mod2 <- lm(Sales ~ Locations, data = df)
+summary(mod2)
+
+```
+
+So, what does this regression suggest? First, the $R^2$ suggests there are probably more variables needed to predict Sales. With that said, if a restaurant chain increases their locations by 1, they can expect an increase in sales of `r round(summary(mod2)$coefficients[2]*1000000000,2)` dollars. 
+
+Now, we need to consider the assumptions of linear regression. The first assumption is the mean of the residuals is zero. We can see the mean is essentially zero.
+
+```{r residual}
+
+mean(summary(mod2)$residuals)
+
+```
+
+The next two assumptions are regarding homoscedasticity and normality of residuals. We will make some plots to view this.
+
+```{r Homoscedasticity}
+
+par(mfrow=c(2,2))
+plot(mod2)
+
+```
+
+We consider the top-right and the bottom-left plots. If there is homoscedasticity, there would be no patterns in the plots. Upon review, there is definitely a pattern. Most likely, this is due to the outliers in sales (McDonald's) and locations (Subway). Thus, there is heteroscedasticity in the model. 
+
+Using the top right plot, we can see a Q-Q plot. This plot is used to determine normality. In this case, the normality of the error terms. If there is normality, there would be a linear line across all points. Unfortunately, this plot shows there is not normality in the residuals. This assumption fails.
+
+The next assumption we check is autocorrelation. We do this with the `acf` function. 
+
+```{r autocorrelation}
+
+acf(summary(mod2)$residuals)
+
+```
+
+This is very comforting! The residuals converge to zero! The other comforting item is the change in sign in convergence. All these suggest there is no autocorrelation in the model.
+
+The next assumption is checking if the residuals are correlated with the number of locations. Our goal is to show there is no correlation. We can do this with the `cor.test` function.
+
+```{r correlation}
+
+cor.test(df$Locations,summary(mod2)$residuals)
+
+```
+
+With a rather large p-value, it is safe to say there is no correlation here we should be concerned with.
+
+Is the linear model a good model? Probably not the best. There are a few assumptions which fail and need to be addressed. There are methods to address these assumptions, but again, that is for another post.
+
+## Conclusion
+
+I want to thank the folks over at _Monday Makeover_ for providing a lane for me to practice statistics. It was enjoyable to use some fun methods and think of a visual that sparked ideas of methods to be used. I also want to point out this can be done with loads of data sets. I would encourage you to find a data set and practice!
+
+Until next week, have fun computing!
