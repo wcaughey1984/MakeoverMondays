@@ -1,0 +1,30 @@
+---
+title: 'Monday Makeover: Spurs have never had a bad defense'
+author: "Billy Caughey"
+date: "12/17/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(ggplot2)
+library(tidyverse)
+library(broom)
+library(readr)
+
+```
+
+## Introduction
+
+This weeks Monday Makeover is regarding one of my favorite sports: basketball.
+
+```{r data import}
+
+df <- read.csv("https://query.data.world/s/4dm5p52zjn6tai2u7t27ig3lbcans7", 
+               header=TRUE, 
+               stringsAsFactors=FALSE)
+
+glimpse(df)
+
+```
