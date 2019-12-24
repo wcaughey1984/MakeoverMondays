@@ -1,0 +1,133 @@
+---
+title: "Makeover Monday - Deloitte Christmas Survey 2019"
+author: "Billy Caughey"
+date: "12/22/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE)
+```
+
+## Introduction
+
+This weeks Makeover Monday is from the [Deloitte Christmas Survey 2019]("https://www2.deloitte.com/uk/en/pages/consumer-business/articles/deloitte-christmas-survey-2019.html"). The visual is a representation of the spend in 2018 compared to the spend in 2019. This representation is done in a table with arrows showing the precent change. 
+
+This is a nice representation but I am going to try to present the information in a different way. As a statistician, histograms are great methods to use and incorporate. This is because we can can a lot of information in a preceise way.
+
+## Data Import
+
+Again, the folks at [data.world]("https://data.world/makeovermonday/2019w52") have posted the data will an R code to pull the data down to R.
+
+```{r data import, results = "hide"}
+
+library(httr)
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(scales)
+GET("https://query.data.world/s/yuycdlchnfcjcp35gc4zxzqsfhxduf", 
+    write_disk(tf <- tempfile(fileext = ".xlsx")))
+df <- read_excel(tf)
+
+```
+
+The first plot I will make is a barplot showing the amount spent (in pounds) in each category by year. I will use a facet to show the UK and Europe against each other.
+
+```{r bar1, fig.width = 10}
+
+
+bar1 <- df %>%
+    ggplot(aes(x = Category, y = `Amount in £`, fill = as.character(Year))) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(fill = "Year") +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 14),
+          axis.title.y = element_text(size = 18),
+          axis.text.y = element_text(size = 14),
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 12),
+          strip.text = element_text(size = 20),
+          legend.position = "top") +
+    facet_wrap(~ Region, nrow = 1) 
+
+bar1
+
+```
+
+The second plot, I will use another barplot. This time, I will do some footwork to compute the percent change from year to year in each category for the UK and Europe. I plot using the same method as the previous plot without use of a facet. This will let me make a percent change for each category within each region.
+
+```{r bar2, fig.width = 10}
+
+bar2 <- df %>%
+    group_by(Region, Category) %>%
+    arrange(Year, .by_group = TRUE) %>%
+    mutate(`Pct Change` = (`Amount in £`/lag(`Amount in £`)) - 1) %>%
+    select(Region, Category, `Pct Change`) %>%
+    filter(is.na(`Pct Change`) == FALSE) %>%
+    ggplot(aes(x = Category, y = `Pct Change`, fill = Region)) + 
+    geom_bar(stat = "identity", position = "dodge") +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 14),
+          axis.title.y = element_text(size = 18),
+          axis.text.y = element_text(size = 14),
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 12),
+          legend.position = "top") +
+    scale_y_continuous(labels = percent) 
+
+bar2
+
+```
+
+Finally, I make use of the `ggarrange` function. This function allows the user to combine plots made from the `ggplot` library. A similar method can be found in base R using the `par(mfrow())` method. I should note I change the colors for the year to year comparison. It did not make sense to use the same colors in both charts. In fact, I would argue it makes it difficult to the reader. One additional thing, I use the `theme_bw` option. In my personal opinion, plots look better in `theme_bw`.
+
+```{r bar1 + bar2, fig.width = 10, fig.height = 8}
+
+bar1 <- df %>%
+    ggplot(aes(x = Category, y = `Amount in £`, fill = as.character(Year))) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(fill = "Year") +
+    theme_bw() +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 14),
+          axis.title.y = element_text(size = 18),
+          axis.text.y = element_text(size = 14),
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 12),
+          strip.text = element_text(size = 20),
+          legend.position = "top") +
+    scale_fill_manual(values=c("#999999", "#E69F00")) +
+    facet_wrap(~ Region, nrow = 1) 
+
+bar2 <- df %>%
+    group_by(Region, Category) %>%
+    arrange(Year, .by_group = TRUE) %>%
+    mutate(`Pct Change` = (`Amount in £`/lag(`Amount in £`)) - 1) %>%
+    select(Region, Category, `Pct Change`) %>%
+    filter(is.na(`Pct Change`) == FALSE) %>%
+    ggplot(aes(x = Category, y = `Pct Change`, fill = Region)) + 
+    geom_bar(stat = "identity", position = "dodge") +
+    theme_bw() +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 14),
+          axis.title.y = element_text(size = 18),
+          axis.text.y = element_text(size = 14),
+          legend.title = element_text(size = 16),
+          legend.text = element_text(size = 12),
+          legend.position = "top") +
+    scale_y_continuous(labels = percent) 
+
+bar3 <- ggarrange(bar1, bar2, nrow = 2, align = "hv")
+
+bar3
+
+```
+
+This is my submission for this week.
+
+## Data Analysis
+
+Unforunately, the data set is rather small. This does not allow for a statistical analysis at this point. I recommend the reader goes to Deliotte's survey and read their high level report.
+

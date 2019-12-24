@@ -1,5 +1,5 @@
 ---
-title: 'Monday Makeover: Spurs have never had a bad defense'
+title: 'Makeover Monday: Spurs have never had a bad defense'
 author: "Billy Caughey"
 date: "12/17/2019"
 output: html_document
@@ -12,19 +12,159 @@ library(ggplot2)
 library(tidyverse)
 library(broom)
 library(readr)
+library(scales)
 
 ```
 
 ## Introduction
 
-This weeks Monday Makeover is regarding one of my favorite sports: basketball.
+This weeks [_Makeover Monday_](https://www.makeovermonday.co.uk/) is regarding one of my favorite sports: basketball. Since 1997, Greg Popovich (Pop, as his players call him) has been leading the Spurs. During his tenure in San Antonio, they have won five world championships. Pop has also had some amazing players on his teams as well: David Robinson, Tim Duncan, Tony Parker, Manu Ginobili, Sean Elliot, Bruce Bowen, Khawi Leonard, and Robert Horry name just a few. 
+
+Coach Pop has been known for coaching the basic fundamentals of the game. One the key staples to a Coach Pop team is the teams defense. Many fans of basketball are not interested in how Pop coaches because it's slow, methodical, or doesn't provide any glimmer to the game. With that said, the results Pop has had over his career has been staggering! 
+
+Most athletes have heard the phrase "Defense wins championships" at some point. My goal is to test this phrase. Trends will be developed for the Spurs and the NBA championships over the 1996-97 to 2018-19 seasons. These trends will be compared to determine if there is any difference. This comparison will be around the interpretation of the linear regression rather than checking the assumptions.
+
+Again, I want to give a shout out to _Makeover Monday_. If you aren't following them, I encourage you to follow them. They welcome everyone no matter what software you use. They enjoy seeing all types of visuals from all types of sources! 
+
+## Pre-Processing
+
+Okay, to brass tacks. The first step is to import the data from [data.world](https://data.world/makeovermonday/2019w51). This weeks data source is a .csv file. The use of the `read.csv` command in the `base` library will be sufficient here. Another option is to use the `read_csv` command from the `readr` library.
 
 ```{r data import}
 
-df <- read.csv("https://query.data.world/s/4dm5p52zjn6tai2u7t27ig3lbcans7", 
-               header=TRUE, 
-               stringsAsFactors=FALSE)
+nba <- read.csv("https://query.data.world/s/4dm5p52zjn6tai2u7t27ig3lbcans7", 
+                header=TRUE, 
+                stringsAsFactors=FALSE)
 
-glimpse(df)
+glimpse(nba)
 
 ```
+
+A few quick callouts about the data. This data contains data from the 1996-97 to 2019-20 seasons in the NBA. The data primarily focuses on defensive ranking. Reading defensive ratings is like reading golf scores: the smaller the score, the better.
+
+Before building my visual for this week, there are a couple of details to attend. First, we need to construct a data set with the season champions, the Spurs, and league average from each season. Yes, I know there will be five years where the Spurs will be counted twice, but go with me on this. Second, this data set will have the following features: season, team name, winning percent, and defensive rating. Finally, the current season, 2019-20, will be excluded since it isn't completed. After the data is collected, then a visual will be built followed by an analysis.
+
+## Data Construction
+
+To remind myself who won championships during a specific season, I turned to [Wikipedia]("https://en.wikipedia.org/wiki/List_of_NBA_champions"). The following snippet of code is what I used to build out the feature to identify champions in the data.
+
+```{r calling out champions}
+
+
+nba <- nba %>%
+    filter(SEASON != "2019-20") %>%    
+    mutate(season_champ = 
+               ifelse(SEASON == "1996-97" & TEAM == "Chicago Bulls", 1,
+               ifelse(SEASON == "1997-98" & TEAM == "Chicago Bulls", 1,
+               ifelse(SEASON == "1998-99" & TEAM == "San Antonio Spurs", 1,
+               ifelse(SEASON == "1999-00" & TEAM == "Los Angeles Lakers", 1,
+               ifelse(SEASON == "2000-01" & TEAM == "Los Angeles Lakers", 1,
+               ifelse(SEASON == "2001-02" & TEAM == "Los Angeles Lakers", 1,
+               ifelse(SEASON == "2002-03" & TEAM == "Detroit Pistons", 1,
+               ifelse(SEASON == "2003-04" & TEAM == "San Antonio Spurs", 1,
+               ifelse(SEASON == "2004-05" & TEAM == "San Antonio Spurs", 1,
+               ifelse(SEASON == "2005-06" & TEAM == "Miami Heat", 1,
+               ifelse(SEASON == "2006-07" & TEAM == "San Antonio Spurs", 1,
+               ifelse(SEASON == "2007-08" & TEAM == "Boston Celtics", 1,
+               ifelse(SEASON == "2008-09" & TEAM == "Los Angeles Lakers", 1, 
+               ifelse(SEASON == "2009-10" & TEAM == "Los Angeles Lakers", 1,
+               ifelse(SEASON == "2010-11" & TEAM == "Dallas Mavericks", 1,
+               ifelse(SEASON == "2011-12" & TEAM == "Miami Heat", 1,
+               ifelse(SEASON == "2012-13" & TEAM == "Miami Heat", 1,
+               ifelse(SEASON == "2013-14" & TEAM == "San Antonio Spurs", 1,
+               ifelse(SEASON == "2014-15" & TEAM == "Golden State Warriors", 1,
+               ifelse(SEASON == "2015-16" & TEAM == "Cleveland Cavaliers", 1,
+               ifelse(SEASON == "2016-17" & TEAM == "Golden State Warriors", 1,
+               ifelse(SEASON == "2017-18" & TEAM == "Golden State Warriors", 1, 
+               ifelse(SEASON == "2018-19" & TEAM == "Toronto Raptors", 1,0
+                      ))))))))))))))))))))))))
+
+```
+
+Now with the champions identified, the data sets for champions, the Spurs, and league averages will be built. Once they are built, they will be brought together into one set. Finally a scatter plot will be presented as my visual for this week.
+
+```{r scatter plot}
+
+champs <- nba %>%
+    filter(season_champ == 1) %>%
+    mutate(WINNING_PERC = round((W / G), 2),
+           focus_group = "Champs") %>%
+    select(SEASON, focus_group, WINNING_PERC, DEF.RTG)
+
+spurs <- nba %>%
+    filter(TEAM == "San Antonio Spurs") %>%
+    mutate(WINNING_PERC = round((W / G), 2),
+           focus_group = TEAM) %>%
+    select(SEASON, focus_group, WINNING_PERC, DEF.RTG)
+
+league_avg <- nba %>%
+    filter(TEAM != "League Avg") %>%
+    select(SEASON, G, W, DEF.RTG) %>%
+    group_by(SEASON) %>%
+    summarize(G = max(G),
+              W = mean(W),
+              DEF.RTG = mean(DEF.RTG)) %>%
+    ungroup() %>%
+    mutate(WINNING_PERC = round((W / G), 2),
+           focus_group = "League Avg") %>%
+    select(SEASON, focus_group, WINNING_PERC, DEF.RTG)
+
+plot_nba <- bind_rows(champs, spurs, league_avg)
+
+plot_nba %>%
+    ggplot(aes(x = DEF.RTG, y = WINNING_PERC, color = focus_group)) +
+    ggtitle("Defensive Rating vs Winning Percentage") +
+    labs(x = "Defensive Rating",
+         y = "Winning Percentage") +
+    scale_y_continuous(label = percent) +
+    geom_point(alpha = 0.5, size = 2)
+
+```
+
+There is my visual for the data this week. The Spurs seem to be clustered in the same aread of the season champions. Now, I'm sure there is more data to go grab, but I am going to keep it simple and only use the data that is part of the weekly task.
+
+## Analysis
+
+Okay, the fun part! We are going to fit two trends to the data. One data will be for the season champions and the other for the Spurs. The goal is to determine if the two trends are similar. Last week we covered the assumptions of linear regression. This week, the assumption of linearity is made and we move forward to checking if the lines are similar.
+
+```{r linear regression}
+
+champs.mod <- lm(WINNING_PERC ~ DEF.RTG, 
+                 data = plot_nba %>% filter(focus_group == "Champs"))
+
+summary(champs.mod)
+
+spurs.mod <- lm(WINNING_PERC ~ DEF.RTG, 
+                 data = plot_nba %>% filter(focus_group == "San Antonio Spurs"))
+
+summary(spurs.mod)
+
+```
+
+To my surprise, there isn't an association between winning percentage and defensive rating for all champions. Not surprisingly at all, however, there is an association between defensive rating and winning percentage for the Spurs. This suggests, given the data in this post, the phrase "Defense wins Championships" may not be correct.
+
+This discovery, in retrospect, isn't too surprising. There have been many champions focused on just outscoring their opponent. It would be interesting to reproduce this analysis for winning percentage and offensive rating to compare to this analysis. In fact, using offensive and defensive rating to determine winning percentage would be interesting as well. I will put some effort into finding these data points.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
