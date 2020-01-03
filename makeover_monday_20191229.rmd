@@ -1,0 +1,65 @@
+---
+title: "Makeover Monday - The Most Popular Makeover Monday Topics"
+author: "Billy Caughey"
+date: "12/31/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment = FALSE)
+```
+
+## Introduction
+
+It's the last Makeover Monday of the year! This week's [makeover]("https://data.world/makeovermonday/2019w53") (posted on 12/29/2019) is to review a visual on the most popular Makeover Monday topics. The goal is to determine how effective the visual is, and what would I do to improve the visual. Additionally, I will look for a way to present an analysis of the data. If there isn't an effective way to do an analysis, I will discuss why an analysis can't be completed.
+
+## Makeover Monday Visual
+
+The data for this visual is hosted by [data.world]("https://data.world/makeovermonday/2019w53"). The data is hosted in a .csv format. This allows the use of the base function `read.csv` in R. Again, I will upload some of my favorite libraries as well as the data is imported.
+
+After the data is imported, I like to use the base function `str` or the `glimpse` function from the `broom` library. This allows me to see what the structure of the data are upon import. This also allows me to see what structure changes I want to make based on the data. Based on what I see the structure is like, I am not going to make any changes.
+
+One item I want to check is the number of observations per year. With 114 observations per year, there is either topic cross overs or some years are incomplete. I am going to produce a table to show the number of observations per year. Based on the table, and what I know about the data, each observation is unique with no crossovers between years. With this said, I will only consider the 2019 observations.
+
+```{r data import}
+
+library(tidyverse)
+library(ggplot2)
+library(broom)
+library(kableExtra)
+
+df <- read.csv("https://query.data.world/s/zixocyfzy7cydw33xcaak6dnww4irg", header=TRUE, stringsAsFactors=FALSE)
+
+df %>% glimpse()
+
+df %>%
+    group_by(Year) %>%
+    summarise(Obs = n()) %>%    
+    kable() %>%
+    kable_styling(bootstrap_options = c("condensed","responsive","striped"), full_width = F)
+
+df_2019 <- df %>%
+    filter(Year == 2019)
+
+```
+
+construct visual
+
+```{r build viz}
+
+df_2019 %>% 
+    ggplot(aes(x = Downloads, y = Subject)) +
+    geom_bar() +
+    coord_flip()
+
+```
+
+
+
+
+
+
+
+
+
+
