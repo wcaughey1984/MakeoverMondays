@@ -1,0 +1,208 @@
+---
+title: "Makeover Monday 2020w5"
+author: "Billy Caughey"
+date: "`r format(Sys.time(), '%b %d, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warnings = F, comments = F)
+
+
+
+
+```
+
+## Introduction
+
+This Makeover Monday took me for a loop. The visual and the data didn't line up. That is when I took a deeper look at the post. The data and the visual are not reflective. The visual shows what the data could look like. 
+
+The data for this Makeover Monday is in regards to Brexit. This last week, Great Britain left the European Union. This is a very big deal on the world stage. As a major world player, Great Britain has the ability to touch several countries in many ways. When the news hit, news outlets and websites lit up like a Christmas tree.
+
+This Makeover Monday is a bit tricky if you don't go to the base data and read the survey output. I will be referencing it later, but it can be found [here](https://d25d2506sfb94s.cloudfront.net/cumulus_uploads/document/sur4dbksy5/Bond_180925_ResultsWithCode.pdf).
+
+As always, there will be three sections: data collection, visualization, and statistical analysis.
+
+## Data Collection 
+
+The data for this makeover can be found at [data.world](https://data.world/makeovermonday/2020w5-brexit-bond). The folks at data.world even provided the code to be able to download the data. I added the `tidyverse` as it is my favorite R library! I also added the `invisible(capture.outpu(*))` piece. All that is returned is some information about the dimensions of the data. 
+
+```{r data collection}
+
+##### Libraries #####
+
+library("httr")
+library("readxl")
+library("tidyverse")
+library("ggpubr")
+
+##### Get Data #####
+
+wbs <- "https://query.data.world/s/rqqgpzghtm62lzzwhtehobhtejmaf6" 
+invisible(capture.output(GET(wbs, write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf)
+
+```
+
+Now that we have the data, let's take a look at the structure and print out the data (it isn't that big!).
+
+```{r stucture of data}
+
+str(df)
+print(df)
+
+```
+
+I had to take a minute and figure out what the data collected was actually saying. After reviewing the data at YouGov, here is what I discovered. The 'remain' and 'leave' columns actually represent two subpopulations within the survey sample. Once I established that, I realized the categories were four different questions about James Bond. Now, you (the reader) may have caught on to that before I did, and that's okay. I wanted to include this piece for those who were stuck like me!
+
+## Visualization
+
+I'm not the biggest fan of the stacked bar chart, but I love the facets feature in the `ggplot` library. I think I'm going to go in that direction.
+
+```{r plotting, out.width = '105%'}
+
+
+ethnic_minority_bond <- df %>%
+    filter(Category == "From an ethnic minority") %>%
+    gather(brexit, percentage, Remain:Leave) %>%
+    ggplot(aes(x = Response, y = percentage, fill = brexit)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    theme_bw() +
+    theme(legend.title = element_blank(),
+          legend.text = element_text(size = 10),
+          axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 10),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 10)) +
+    ggtitle("From an ethnic minority?")
+
+
+female_bond <- df %>%
+    filter(Category == "Female") %>%
+    gather(brexit, percentage, Remain:Leave) %>%
+    ggplot(aes(x = Response, y = percentage, fill = brexit)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    theme_bw() +
+    theme(legend.title = element_blank(),
+          legend.text = element_text(size = 10),
+          axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 10),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 10)) +
+    ggtitle("Female?")
+
+gay_bond <- df %>%
+    filter(Category == "Gay") %>%
+    gather(brexit, percentage, Remain:Leave) %>%
+    ggplot(aes(x = Response, y = percentage, fill = brexit)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    theme_bw() +
+    theme(legend.title = element_blank(),
+          legend.text = element_text(size = 10),
+          axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 10),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 10)) +
+    ggtitle("Gay?")
+
+non_british_bond <- df %>%
+    filter(Category == "Of a non-British nationality") %>%
+    gather(brexit, percentage, Remain:Leave) %>%
+    ggplot(aes(x = Response, y = percentage, fill = brexit)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    theme_bw() +
+    theme(legend.title = element_blank(),
+          legend.text = element_text(size = 10),
+          axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 10),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 10)) +
+    ggtitle("Of a non-British nationality?")
+
+bond_plot <- ggarrange(ethnic_minority_bond, female_bond, gay_bond, non_british_bond,
+                       ncol = 2, nrow = 2,
+                       common.legend = T,
+                       legend = "bottom",
+                       widths = c(2,2))
+
+annotate_figure(bond_plot,
+                top = text_grob("Can James Bond be...", size = 16))
+
+```
+
+Of the four question ares, it appears voters want James Bond to remain British. This makes sense to me. In both camps, there is a high level of nationalism. They are proud of and want what is best for Great Britain. I also think there is an understanding James Bond is a cinema icon which points to Britain as well. As a side note, I'm glad both sides agreed on this point. As an American, it would be weird to have an American James Bond. 
+
+What was really interesting to me is the "From an ethnic minority". At first, I was absolutely blown away. Both sides were in support with James Bond being from an ethnic minority. The leading candidate is Idris Elba. This candidate selection makes sense as well. Both sides did not want to give up British nationality, and were okay with an ethnic minority. Enter Idris Elba. Isn't it cool when the numbers and reality make sense!?
+
+## Analysis
+
+In looking at this data, one method come to mind: $\chi^2$ test. According to [StatisticsSolutions](https://www.statisticssolutions.com/using-chi-square-statistic-in-research/), the $\chi^2$ test is used to determine if there is a relationship between two categorical variables. The null hypothesis being there is no relationship between the two variables versus the alternative hypothesis, where this is a relationship. 
+
+For this case, the $\chi^2$ test will test each question to determine if there is a relationship or not. First, I need to put the data in tabular form. That's pretty easy. Looking back to how the data came, all I need to do is isolate the rows of the specific question and the columns of data. There is my table. Then, I need to use the `chisq.test` command to test if there is a relationship or not. Alright, here we go!
+
+### Could James Bond be from an ethnic minority?
+
+Here is the question for this table.
+
+```{r ethnic minority}
+
+df %>%
+    filter(Category == "From an ethnic minority") %>%
+    select(Response, Remain, Leave) %>%
+    column_to_rownames(var = "Response")
+
+```
+
+With the table set up, I am ready to use the `chisq.test` in R.
+
+```{r ethnic minority chisq}
+
+df %>%
+    filter(Category == "From an ethnic minority") %>%
+    select(Response, Remain, Leave) %>%
+    column_to_rownames(var = "Response") %>%
+    chisq.test()
+
+```
+
+Okay, the result is we reject the null hypothesis in favor of the alternative hypothesis. But what is the relationship? The relationship is the difference of opinions between those waning Britain to leave or remain in the EU.
+
+### Is there a faster way?
+
+Okay, I did one case. It didn't take 'forever', but I don't want to type it out three more times. The faster way, and more efficient way, is to build a loop across the data. This loop will filter the data and store the tests p-value. Then we can look at the data as a whole. I want to make sure to point out there are many ways to do this. I am just presenting one way.
+
+```{r chi sq tests}
+
+cats <- df %>%
+    select(Category) %>%
+    unique() %>%
+    pull
+
+jb_pvalues <- NULL
+
+for(i in cats){
+    
+    test_results <- df %>%
+        filter(Category == i) %>%
+        select(Response, Remain, Leave) %>%
+        column_to_rownames(var = "Response") %>%
+        chisq.test()
+    
+    jb_pvalues <- c(jb_pvalues, test_results$p.value)
+    
+    
+}
+
+final_results <- data.frame(Category = cats, p_value = jb_pvalues)
+print(final_results)
+
+```
+
+Across all categories, the null hypothesis is rejected in favor of the alternative hypothesis. This suggests there is a relationship being observed. The relationship is the difference of opinions between those who want to remain in or leave the European Union. Now, we don't just have visual evidence there is a difference between those wanting to remain in or leave the European Union. We have statistical evidence as well.
+
+
+
+
+
+
+
