@@ -1,0 +1,142 @@
+---
+title: "Makeover Monday 2020w7"
+author: "Billy Caughey"
+date: "2/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE, cache = T}
+knitr::opts_chunk$set(echo = TRUE, message = F, comment = F, warning = F)
+```
+
+## Introduction
+
+This weeks Makeover Monday comes from [howmuch.net](https://howmuch.net/articles/distribution-worlds-wealth-2019). The visual for this analysis is the heatmap at the top of the article. The visual shows the proportion of wealth distributed among countries of the world.
+
+The key main takeaways from this article:
+
+- The US still holds the most wealth of any country
+- Asia, as a whole, has more wealth than US
+- US, China, and Europe's wealth show their strength in trading.
+
+## Objectives
+
+Let's cover the objectives. 
+
+### What works and what doesn't work with this chart?
+
+Aestetically, I like the look of treemaps. It is a clean method to show observational weight. Unfortunately, I do not like the geometry of spherical treemaps. It's difficult to see the weight of observations in a spherical shapes.
+
+### How can you make it better?
+
+First,  I want to convert the treemaps to a retangular form. Percentages are easier to show in the rectangular form. This will be easier to interpret. Second, I want to build several visuals. There were several key takeaways I would like to test with these visuals.
+
+### Statistical Analysis
+
+Given proportions can be built, we can perform several proportions tests to determine if there are stastical differences between groups.
+
+## My visual
+
+Again, the data was nicely held by [data.world](https://data.world/makeovermonday/2020w7-world-wealth) along with the code to import the data. We do this next.
+
+The field of wealth is coming in as a character due to the '$' and ','. To handle this, we use the `parse_number` function from the `readr` library. A simple adjustment to country title will be made as well.
+
+```{r data import, cache = T}
+
+library(httr)
+library(readxl)
+library(tidyverse)
+library()
+invisible(capture.output(GET("https://query.data.world/s/nfu6wv25tgzjhli3s2ifu3xchhf4pt", 
+    write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf) %>%
+    filter(is.null(`Wealth ($B)`) == F) %>%
+    mutate(`Wealth ($B)` = parse_number(`Wealth ($B)`),
+           percentage = `Wealth ($B)` / sum(`Wealth ($B)`, na.rm = T),
+           new_country = paste(Country,"\n",round(percentage * 100, 1),"%")) 
+
+glimpse(df)
+
+```
+
+With the data in and small changes made, the first treemap is ready for completion. The first tree map is presented below. 
+
+```{r treemap1}
+
+# library
+library(treemap)
+ 
+# treemap
+treemap(df,
+        index="new_country",
+        vSize="percentage",
+        type="index",
+        title="Percent of World Wealth"
+            )
+
+```
+
+A few key things which stand out to me. There is a lot of wealth in the United States and China. The power the United States and China weild in trading and production is visualized here. The next seven countries have either been leaders on the world stage or are support the leaders on the world stage. 
+
+## What does the EU look like?
+
+One of the reasons the European Union was formed was to compete with the United States in trading and wealth. With that said, let's develop a tree map with the European Union represented.
+
+```{r european union}
+
+eu <- function(x){
+    if(x %in% c("France","Germany","United Kingdom","Austria","Belgium",
+                "Netherlands","Switzerland","Ireland","Greece","Spain",
+                "Italy","Portugal")){
+        return("European Union")
+    } else {
+        return(x)
+    } 
+    
+}
+
+library(dplyr)
+
+df1 <- df %>%
+    mutate(country1 = sapply(X = Country, FUN = eu)) %>%
+    group_by(country1) %>%
+    summarise(wealth = sum(`Wealth ($B)`)) %>%
+    ungroup() %>%
+    mutate(percentage1 = wealth / sum(wealth, na.rm = T),
+           new_country1 = paste(country1,"\n",round(percentage1 * 100, 1),"%"))
+
+
+# treemap
+treemap(df1,
+        index="new_country1",
+        vSize="percentage1",
+        type="index",
+        title="Percent of World Wealth"
+        )
+
+
+
+```
+
+The European Union hold 21 percent of the world's worthy. Even as a union, the EU still does not have the wealth the United States does. 
+
+## Wealth of Regions
+
+In this last section, I will consider the wealth of continents. All the regions will be joined together except for North America. North America will be slip into North America and the United States. This may give some idea of the number of countries needed to be greater than the United States wealth.
+
+```{r continents}
+
+df2 <- df1 %>%
+    mutate(region2 = region,
+           region2 = ifelse(Country == "United States","United States",Courtry)) %>%
+    group_by(region2) %>%
+    mutate(percent2 = wealtj)
+
+
+
+
+
+
+
+
+
