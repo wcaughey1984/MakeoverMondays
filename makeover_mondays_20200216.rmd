@@ -130,7 +130,7 @@ df2 <- df1 %>%
     mutate(region2 = region,
            region2 = ifelse(Country == "United States","United States",Courtry)) %>%
     group_by(region2) %>%
-    mutate(percent2 = wealtj)
+    mutate(percent2 = wealth)
 
 
 
