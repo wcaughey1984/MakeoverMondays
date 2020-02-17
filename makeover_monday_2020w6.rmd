@@ -1,0 +1,116 @@
+---
+title: "Makeover Monday - 2020w6"
+author: "Billy Caughey"
+date: "February 9, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F, comments = F)
+```
+
+## Introduction
+
+Can you believe it's week 6 of 2020 already?! Okay, back to brass tacks. This week's data set and viz comes from a Washington Post titled ["Nearly a quarter of Americans have never experienced the U.S. in a time of peace"](https://www.washingtonpost.com/politics/2020/01/08/nearly-quarter-americans-have-never-experienced-us-time-peace/). The viz being criticized is titled ["How much of your life the U.S. has been at war"](https://data.world/makeovermonday/2020w6).
+
+Let's critique the viz. Right off the bat, I am not a fan of this viz. In my mind, I am comparing a continuous outcome (percentage of lifetime) to a continuous input (years). To me, this doesn't scream  dashboard with a bakery of pies (see what I did there?). The other issue I have with this plot is the band around each pie. I understand why they include it, but it seems less optimal than it could be. The pie chart percentage and time flow of that band should flow in the same direction.
+
+## My Viz
+ 
+Okay, let's get to my submission for the week. I am a big fan of K.I.S.S.: Keep It Simple Stupid. As such, we are going to use a line chart where the x-axis will be time and the y-axis will be percentage of lifetime during a war. Again, the data will be provided by [data.world](https://data.world/makeovermonday/2020w6) along with the code to pull the data.
+
+I am going to do a touch of data cleaning as well. In review of the data, there are decimal values for years less than 100. For those years at 100, the value of 100 and not 1 is given. So, a quick change is necessary.
+
+```{r pulling data and making the initial plot}
+
+##### Libraries #####
+
+library(httr)
+library(readxl)
+library(tidyverse)
+library(scales)
+library(tfplot)
+
+##### Importing Data #####
+
+invisible(capture.output(GET("https://query.data.world/s/zj3mnagoc7zk5tc7lemnkf3txdah2n", 
+    write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf) %>%
+    rename(year = `Birth year`,
+           percentage = `% of your life the US has been at war`) %>%
+    mutate(percentage = ifelse(percentage == 100, 1, percentage),
+           war_time = ifelse(year %in% c(1914:1918,1939:1945,1950:1953,1955:1975,
+                                         1990:1991, 2001:2019), 1,0))
+
+##### First Plot #####
+
+df %>%
+    ggplot(aes(x = year, y = percentage)) +
+    geom_line(size = 2) +
+    xlab("Birth Year") +
+    ylab("Percentage") +
+    scale_y_continuous(labels = percent) +
+    theme_bw() +
+    theme(axis.title.x = element_text(size = 16),
+          axis.text.x = element_text(size = 14),
+          axis.title.y = element_text(size = 16),
+          axis.text.y = element_text(size = 14))
+
+
+```
+
+This is a better looking plot, but I do want to include something in regards to wars. I did not like the bands, but it is important to understand which years were war years, and which years were not war years. I am going to add some blue columns showing the war years.
+
+```{r line and bar plot}
+
+df %>%
+    ggplot() +
+    geom_bar(aes(x = year, y = war_time, fill = factor(war_time)), stat = "identity") +
+    geom_line(aes(x = year, y = percentage), size = 2) +
+    xlab("Birth Year") +
+    xlim(1900,2025) +
+    ylab("Percentage") +
+    ggtitle("Percentage of Life Time the United States has been at War") +
+    scale_y_continuous(labels = percent) +
+    theme_bw() +
+    theme(axis.title.x = element_text(size = 14),
+          axis.text.x = element_text(size = 12),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 12),
+          plot.title = element_text(size = 16),
+          legend.position = "none")
+
+```
+
+And there we go! This will be my submission for this weeks Makeover Monday!
+
+## Analytics
+
+As always, I try to ask some additional questions. This weeks makeover has a time element attached to it. A time series method could be applied, but I have another question in mind. I'd like to know the percent change over time. To me, knowing how often the United States has been at war, I bet it is all over the place.
+
+```{r percent change}
+
+df %>%
+    mutate(percent_change = (percentage - lag(percentage))/lag(percentage),
+           percent_change = ifelse(is.na(percent_change) == T, 0, percent_change)) %>%
+    ggplot(aes(x = year, y = percent_change)) +
+    geom_line(size = 2) +
+    xlab("Birth Year") +
+    xlim(1900,2025) +
+    ylab("Percent Change") +
+    scale_y_continuous(labels = percent) +
+    theme_bw() +
+    theme(axis.title.x = element_text(size = 16),
+          axis.text.x = element_text(size = 14),
+          axis.title.y = element_text(size = 16),
+          axis.text.y = element_text(size = 14))
+    
+
+```
+
+What I find interesting about this plot is the volatility. Before 1978, the percent change was swinging all over the place. The drops in percent change were as large as the gains. After 1978, the percent change boomed! There was one little dip, but then peaked in 2000. In 2001, 9/11 happened. Then there was no percent change because the USA has been at war ever since.
+
+
+
+
+
