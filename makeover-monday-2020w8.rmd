@@ -1,0 +1,191 @@
+---
+title: "Makeover Monday, 2020w8"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+
+##### Libraries #####
+
+library(flexdashboard)
+library(httr)
+library(readxl)
+library(tidyverse)
+library(scales)
+library(ggpubr)
+library(kableExtra)
+
+##### Pulling in the data #####
+
+invisible(capture.output(GET("https://query.data.world/s/btmtcqnqumda6yhsxzqwtzbyb5uar7", 
+    write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf, sheet = 2)
+
+##### Explorative Data Analytsis #####
+
+df1 <- df %>%
+    mutate(completion = ifelse(`Client situation at end of support` == "Unknown",
+                               "Dropped Out","Completed")) %>%
+    group_by(Year, completion) %>%
+    summarise(grp_obs = sum(`Size (no. of clients)`)) %>%
+    mutate(pct_complete = grp_obs / sum(grp_obs)) %>%
+    ungroup()
+
+comp1415 <- df1 %>%
+    filter(Year == names(table(df1$Year))[1]) %>%
+    ggplot(aes(x = completion, y = pct_complete)) +
+    geom_col() +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 8),
+          axis.title.x = element_blank(),
+          axis.text.y = element_text(size = 8),
+          axis.title.y = element_blank()) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("2014-15")  +
+    coord_flip()
+
+comp1516 <- df1 %>%
+    filter(Year == names(table(df1$Year))[2]) %>%
+    ggplot(aes(x = completion, y = pct_complete)) +
+    geom_col() +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 8),
+          axis.title.x = element_blank(),
+          axis.text.y = element_text(size = 8),
+          axis.title.y = element_blank()) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("2015-16")  +
+    coord_flip()
+
+comp1617 <- df1 %>%
+    filter(Year == names(table(df1$Year))[3]) %>%
+    ggplot(aes(x = completion, y = pct_complete)) +
+    geom_col() +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 8),
+          axis.title.x = element_blank(),
+          axis.text.y = element_text(size = 8),
+          axis.title.y = element_blank()) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("2016-17")  +
+    coord_flip()
+
+comp1718 <- df1 %>%
+    filter(Year == names(table(df1$Year))[4]) %>%
+    ggplot(aes(x = completion, y = pct_complete)) +
+    geom_col() +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 8),
+          axis.title.x = element_blank(),
+          axis.text.y = element_text(size = 8),
+          axis.title.y = element_blank()) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("2017-18")  +
+    coord_flip()
+
+
+##### homeless situation #####
+
+df2 <- df %>%
+    mutate(`Housing situation at end of support` = ifelse(
+        `Client situation at end of support` %in% c("Couch surfer","Rough sleeper","Short term temporary accommodation"),"Homeless","At Risk")) %>%
+    select(Year, `Housing situation at start of support`, `Housing situation at end of support`, `Size (no. of clients)`) %>%
+    mutate(situation = paste0(`Housing situation at start of support`," - \n", `Housing situation at end of support`)) %>%
+    group_by(Year, situation) %>%
+    summarize(Size = sum(`Size (no. of clients)`)) %>%
+    mutate(pct_situation = Size / sum(Size))
+
+home1415 <- df2 %>%
+    filter(Year == names(table(df1$Year))[1]) %>%
+    ggplot(aes(x = situation, y = pct_situation)) +
+    geom_col() +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 8),
+          axis.title.x = element_blank(),
+          axis.text.y = element_text(size = 8),
+          axis.title.y = element_blank()) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("2014-15")  +
+    coord_flip()
+
+home1516 <- df2 %>%
+    filter(Year == names(table(df1$Year))[2]) %>%
+    ggplot(aes(x = situation, y = pct_situation)) +
+    geom_col() +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 8),
+          axis.title.x = element_blank(),
+          axis.text.y = element_text(size = 8),
+          axis.title.y = element_blank()) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("2015-16")   +
+    coord_flip()
+
+home1617 <- df2 %>%
+    filter(Year == names(table(df1$Year))[3]) %>%
+    ggplot(aes(x = situation, y = pct_situation)) +
+    geom_col() +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 8),
+          axis.title.x = element_blank(),
+          axis.text.y = element_text(size = 8),
+          axis.title.y = element_blank()) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("2016-17")   +
+    coord_flip()
+
+home1718 <- df2 %>%
+    filter(Year == names(table(df1$Year))[3]) %>%
+    ggplot(aes(x = situation, y = pct_situation)) +
+    geom_col() +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 8),
+          axis.title.x = element_blank(),
+          axis.text.y = element_text(size = 8),
+          axis.title.y = element_blank()) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("2017-18")   +
+    coord_flip()
+
+
+
+
+```
+
+
+
+This week's Makeover is from the Australian Specialist Homelessness Services. The data will be collected from [data.world]("https://data.world/makeovermonday/2020w8"). There are two main questions I want to answer. First, I want to know the dropout rate from year to year. The second question I want to answer is did the intervention work? 
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Drop Out Rate
+
+A client will have dropped out if `Client situation at end of support == "Unknown"`.
+
+Over the study duration, the drop out rate remained less than 8% from year to year. This is an incredible dropout rate. This also speaks to the researchers doing a fantastic job keeping connected with clients.
+
+```{r}
+
+ggarrange(comp1415, comp1516, comp1617, comp1718,
+          ncol = 2, nrow = 2)
+
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Chart B
+blah
+```{r}
+
+ggarrange(home1415, home1516, home1617, home1718,
+          ncol = 2, nrow = 2)
+
+
+```
+

@@ -5,7 +5,7 @@ date: "2/16/2020"
 output: html_document
 ---
 
-```{r setup, include=FALSE, cache = T}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = F, comment = F, warning = F)
 ```
 
@@ -33,20 +33,20 @@ First,  I want to convert the treemaps to a retangular form. Percentages are eas
 
 ### Statistical Analysis
 
-Given proportions can be built, we can perform several proportions tests to determine if there are stastical differences between groups.
+Given proportions can be built, I will consider if the United States, China, and the European Union have similar proportions. 
 
-## My visual
+## My first visual
 
 Again, the data was nicely held by [data.world](https://data.world/makeovermonday/2020w7-world-wealth) along with the code to import the data. We do this next.
 
 The field of wealth is coming in as a character due to the '$' and ','. To handle this, we use the `parse_number` function from the `readr` library. A simple adjustment to country title will be made as well.
 
-```{r data import, cache = T}
+```{r data import}
 
 library(httr)
 library(readxl)
 library(tidyverse)
-library()
+
 invisible(capture.output(GET("https://query.data.world/s/nfu6wv25tgzjhli3s2ifu3xchhf4pt", 
     write_disk(tf <- tempfile(fileext = ".xlsx")))))
 df <- read_excel(tf) %>%
@@ -54,8 +54,6 @@ df <- read_excel(tf) %>%
     mutate(`Wealth ($B)` = parse_number(`Wealth ($B)`),
            percentage = `Wealth ($B)` / sum(`Wealth ($B)`, na.rm = T),
            new_country = paste(Country,"\n",round(percentage * 100, 1),"%")) 
-
-glimpse(df)
 
 ```
 
@@ -78,7 +76,7 @@ treemap(df,
 
 A few key things which stand out to me. There is a lot of wealth in the United States and China. The power the United States and China weild in trading and production is visualized here. The next seven countries have either been leaders on the world stage or are support the leaders on the world stage. 
 
-## What does the EU look like?
+## My Second Visual: What does the EU look like?
 
 One of the reasons the European Union was formed was to compete with the United States in trading and wealth. With that said, let's develop a tree map with the European Union represented.
 
@@ -95,8 +93,6 @@ eu <- function(x){
     
 }
 
-library(dplyr)
-
 df1 <- df %>%
     mutate(country1 = sapply(X = Country, FUN = eu)) %>%
     group_by(country1) %>%
@@ -111,7 +107,7 @@ treemap(df1,
         index="new_country1",
         vSize="percentage1",
         type="index",
-        title="Percent of World Wealth"
+        title="Percent of World Wealth with European Union"
         )
 
 
@@ -120,21 +116,36 @@ treemap(df1,
 
 The European Union hold 21 percent of the world's worthy. Even as a union, the EU still does not have the wealth the United States does. 
 
-## Wealth of Regions
+## Statistical Analysis
 
-In this last section, I will consider the wealth of continents. All the regions will be joined together except for North America. North America will be slip into North America and the United States. This may give some idea of the number of countries needed to be greater than the United States wealth.
+As stated before, the goal is to determine if the United States, European Union, and China have similar proportions. These three entities can be thought of as the three main trading groups in the world. If they have similar proportions, we can say they have equal trading strength.
 
-```{r continents}
+```{r chisqtest}
 
-df2 <- df1 %>%
-    mutate(region2 = region,
-           region2 = ifelse(Country == "United States","United States",Courtry)) %>%
-    group_by(region2) %>%
-    mutate(percent2 = wealth)
+df %>%
+    mutate(country1 = sapply(X = Country, FUN = eu)) %>%
+    group_by(country1) %>%
+    summarise(wealth = sum(`Wealth ($B)`)) %>%
+    ungroup() %>%
+    filter(country1 %in% c("United States","European Union","China")) %>%
+    mutate(percentage1 = wealth / sum(wealth, na.rm = T),
+           new_country1 = paste(country1,"\n",round(percentage1 * 100, 1),"%")) %>%
+    treemap(
+        index="new_country1",
+        vSize="percentage1",
+        type="index",
+        title="Percent of World Wealth: United States, European Union, and China"
+        )
 
+df1 %>%
+    filter(country1 %in% c("United States","European Union","China")) %>%
+    select(country1, wealth) %>%
+    pull(wealth) %>%
+    chisq.test()
 
+```
 
-
+Based on the results, we can show the three entities are not similar in proportion. 
 
 
 
