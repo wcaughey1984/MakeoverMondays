@@ -1,0 +1,210 @@
+---
+title: "Tech's Impact on Music Sales"
+author: "Billy Caughey"
+date: "May 25, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, comment = FALSE, message = FALSE)
+```
+
+## Purpose
+
+The purpose of this rmarkdown is to be my submission for the Makeover Monday w21 submission. Usually, I would do a dashboard in Tableau Public, but this week I wanted to be a little more robust in my exploration. So, instead of doing something like a dashboard, I will do more of an analysis in R. The code and some of my thoughts are presented in full.
+
+## Introduction
+
+For this week's makeover, music sales is consider. The article referenced this week is ["Visualizing 40 Years of Music Industry Sales"](https://www.visualcapitalist.com/music-industry-sales/). One of the main trends of this article is how technology has changed to distribution of music from physical medium to a digital medium. 
+
+The specific visual desired to be address is below in figure 1. 
+
+```{r mm viz, fig.align = 'center', out.width = "75%", echo = FALSE, fig.cap = "Fig. 1: Makeover Monday W21 Viz", cache = TRUE}
+
+library(knitr)
+library(png)
+
+img1_path <- "C:/Users/Owner/Documents/GitHub/MakeoverMondays/physical-vs-digital_monday_makeover_2020w21.png"
+
+include_graphics(img1_path)
+
+```
+
+### What I think is good about this visual...
+
+One of the big tasks of this exercise is to determine what I like. First, I enjoy the simplicity of the visual. It's a very basic approach to a great story. Second, I appreciate the callout of significant time points. Napster and iTunes definitely played an impact on the change from physical to digital media. 
+
+### How can I make this visual better...
+
+One of my biggest pet peeves is when categories are grouped and not documented. I feel like that is not only a disservice but an attempt to improve the story. There are mutliple time points along the timeline which are not labeled but impactful. For instance, the first portable CD player was a large technology change. Additionally, the launches of [Pandora](www.pandora.com) and [Spotify](www.spotify.com) are points of impact discussed but not shown.  
+
+## Data Import
+
+In this step we use the code provided by data.world. I will use the code they supplied to import the data. I will adjust the naming convensions as well.
+
+```{r data import, cache = TRUE} 
+
+library(httr)
+library(readxl)
+
+url <- "https://query.data.world/s/bgum7ipk4c45xtm2ddnvmavvwfmshg"
+invisible(capture.output(GET(url, write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf)
+
+```
+
+Let's look at the structure and names of the data set as well.
+
+```{r data structure and names}
+
+names(df) <- c("Format","Metric","Year","Number of Records","Value (Actual)")
+
+str(df)
+
+```
+
+## Some ground work...
+
+For this viz, the following formats will be considered. Additionally, these formats will be grouped into "physical" and "digital" in the following way:
+
+Format      | Grouping 
+------------|------------------
+8 - Track | Physical
+Cassette | Physical
+CD | Physical
+LP / EP | Physical
+On Demand Streaming (Ad-Supported) | Digital
+Other Ad-Supported Streaming | Digital
+Paid Subscription | Digital
+Paid Subscriptions | Digital
+Ringtones & Ringbacks | Digital
+
+There are some major time points to address as well. Currently, the viz tells the story of how technology led to a downfall of sales from physical to digital media. A piece of the story which is also meaningful is how technology led to the evolution of physical media. So, initial dates of portable cassette and CD players will be identified.
+
+On the storyline of decreasing sales, one piece of technology has to be looked at: smart technology. This ranges from items like the iPod to the most recent smart phone technology which allows for internet streaming. Along this same point of thought, the web services of [YouTube](www.youtube.com) must be called out at this point. The ability for artists to monetize videos off ads makes YouTube extremely lucrative.
+
+Some of the years to be considered are:
+
+Event | Date
+------|--------
+Portable Cassette Player | 1979
+Portable CD Player | 1984
+First MP3 Player | 1997
+Portable CD Player with Anti-Skip Tech | 1995
+Napster Launch | 1999
+iTunes Store + iPod Release | 2001
+YouTube | 2005
+Smart Phone Launch | 2007
+Spotify and Pandora | 2008
+4G Mobile Internet | 2010
+
+## Let's start vizzing!
+
+With the ground work done, the vizzing can begin. First, apply the formatting and grouping. Then the viz will be built. Note, at this point the dates of interest stated won't be applied yet.
+
+```{r base viz, fig.align = "center", fig.width = 14, fig.height = 10, fig.cap = "Fig. 2: Base Visual"}
+
+library(tidyverse)
+
+df1 <- df %>%
+    filter(Metric == "Value (Adjusted)") %>%
+    filter(Format %in% c("8 - Track", "Cassette", "CD", "LP/EP", 
+                         "On Demand Streaming (Ad-Supported)", 
+                         "Other Ad-Supported Streaming", 
+                         "Paid Subscription", "Paid Subscriptions"))
+
+df1 %>%
+    ggplot(aes(x = Year, y = `Value (Actual)`, fill = Format)) +
+    geom_bar(stat = "identity") +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 18),
+          axis.title.x = element_text(size = 20),
+          axis.text.y = element_text(size = 18),
+          axis.title.y = element_text(size = 20),
+          legend.text = element_text(size = 14),
+          legend.title = element_text(size = 16))
+
+```
+
+The base visual is built! Now, the important dates will be added. These important dates will be built with vertical black lines. 
+
+```{r base viz with dates, fig.align = "center", fig.width = 17, fig.height = 10, fig.cap = "Fig. 3: Base Visual with Important Dates"}
+
+df1 %>%
+    ggplot(aes(x = Year, y = `Value (Actual)`, fill = Format)) +
+    geom_bar(stat = "identity") +
+    geom_vline(aes(xintercept = 1979), size = 2) +
+    geom_vline(aes(xintercept = 1984), size = 2) + 
+    geom_vline(aes(xintercept = 1995), size = 2) + 
+    geom_vline(aes(xintercept = 1997), size = 2) + 
+    geom_vline(aes(xintercept = 1999), size = 2) +
+    geom_vline(aes(xintercept = 2001), size = 2) +
+    geom_vline(aes(xintercept = 2005), size = 2) +
+    geom_vline(aes(xintercept = 2007), size = 2) +
+    geom_vline(aes(xintercept = 2008), size = 2) +
+    geom_vline(aes(xintercept = 2010), size = 2) +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 18),
+          axis.title.x = element_text(size = 20),
+          axis.text.y = element_text(size = 18),
+          axis.title.y = element_text(size = 20),
+          legend.text = element_text(size = 14),
+          legend.title = element_text(size = 16))
+
+```
+
+This shows an interesting story. Technology advances led to the rise of different medium. When the portable cassette player entered the market, the mediums of 8-track and LP/EP (Vinyl) see declines in sales. The development of the portable cassette player did have a negative effect. Cassette sales didn't recover the sales lost from the LP/EP decreasing sales. 
+
+The next piece of technology, the portable CD player in 1984, bumped up sales. In fact, this piece of technology led to a CD sales boom. Even the addition of anti-skip technology in 1995 didn't have the same effect as the original portable CD player. 
+
+The next technology advances from Napster to the smart phone seem to have a negative impact on sales. This is most likely due to the ease of obtaining music. The requirement of purchasing an entire album of songs was no longer necessary. Playlists could be created on YouTube, iPods, and smart phones through market places like the iTunes Store. The saving grace appears to be subscription services such as Spotify and Pandora. These services charge 10-20 dollars a month as a base package. Combining this with the wide acceptance of the smartphone, there is a huge potential to see sales go continue to increase.
+
+## Let's start vizzing - part 2!
+
+The last necessary piece is to view this in the sense of 'physical' and 'digital' mediums. The previous visuals, the story between tech and medium was observed. In this part of the analysis, we look to see if we can see how these dates impact physical vs digital mediums.
+
+```{r new vizs, fig.align = "center", fig.width = 17, fig.height = 10, fig.cap = "Fig. 4: Base Visual with Important Dates, Physical vs Digital"}
+
+
+df1 %>%
+    mutate(Group = ifelse(Format %in% c("8 - Track", "Cassette", "CD", "LP/EP"),
+                          "Physical","Digital")) %>%
+    ggplot(aes(x = Year, y = `Value (Actual)`, fill = Group)) +
+    geom_bar(stat = "identity") +
+    geom_vline(aes(xintercept = 1979), size = 2) +
+    geom_vline(aes(xintercept = 1984), size = 2) + 
+    geom_vline(aes(xintercept = 1995), size = 2) + 
+    geom_vline(aes(xintercept = 1997), size = 2) + 
+    geom_vline(aes(xintercept = 1999), size = 2) +
+    geom_vline(aes(xintercept = 2001), size = 2) +
+    geom_vline(aes(xintercept = 2005), size = 2) +
+    geom_vline(aes(xintercept = 2007), size = 2) +
+    geom_vline(aes(xintercept = 2008), size = 2) +
+    geom_vline(aes(xintercept = 2010), size = 2) +
+    theme_bw() +
+    theme(axis.text.x = element_text(size = 18),
+          axis.title.x = element_text(size = 20),
+          axis.text.y = element_text(size = 18),
+          axis.title.y = element_text(size = 20),
+          legend.text = element_text(size = 14),
+          legend.title = element_text(size = 16))
+
+```
+
+The story here changes a touch. With the impact of technology, digital sales begin to increase from 2005. Ironically, this is the same year YouTube kicked off. It's interesting to see how sales dropped from anti-skip technology (1995) to the first MP3 (1997). In order to use the MP3, CDs had to be 'ripped' to a computer and loaded to the MP3. This bumped the sales until Napster. It appears Napster's effect, although felt today, could only be reversed by monetizing a similar product. After all, that is what Spotify and Pandora are. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,121 @@
+---
+title: "Makeover Monday, 2020w9"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE, message=F, comment=F, warning=F}
+
+##### Libraries #####
+
+library(flexdashboard)
+library(httr)
+library(readxl)
+library(tidyverse)
+library(kableExtra)
+
+##### Data Import #####
+
+school_age = function(x){
+    
+    if(x == "Kindergarten"){return(6)}
+    else if(x == "First grade"){return(7)}
+    else if(x == "Second grade"){return(8)}
+    else if(x == "Third grade"){return(9)}
+    else if(x == "Fourth grade"){return(10)}
+    else if(x == "Fifth grade"){return(11)}
+    else if(x == "Sixth grade"){return(12)}
+    else if(x == "Seventh grade"){return(13)}
+    else if(x == "Eighth grade"){return(14)}
+    else if(x == "Ninth grade"){return(15)}
+    else if(x == "10th grade"){return(16)}
+    else if(x == "11th grade"){return(17)}
+    else {return(18)}
+
+}
+
+invisible(capture.output(GET("https://query.data.world/s/hf5w6pnh5rxzbg5uz7qzc5a7p2cq5k", 
+    write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf) %>%
+    mutate(diff = `Hours Needed` - `Hours Averaged`,
+           age = sapply(`Grade`, school_age))
+
+
+mod1 <- lm(diff ~ age, data = df)
+tab1 <- round(summary(mod1)$coefficients, 3) %>%
+    kable(caption = "Table 1. Linear Regression Results") %>%
+    kable_styling()
+
+
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Bar Graph of Hours Slept vs Hours Needed
+
+```{r}
+
+df %>%
+    select(`Grade`, `Hours Needed`, `Hours Averaged`) %>%
+    mutate(`Grade` = factor(x = `Grade`,
+                            levels = c("12th grade","11th grade","10th grade",
+                                       "Ninth grade","Eighth grade","Seventh grade",
+                                       "Sixth grade","Fifth grade","Fourth grade",
+                                       "Third grade","Second grade","First grade",
+                                       "Kindergarten"))) %>%
+    gather(key = `Hours`,
+           value = `Sleep`,
+           `Hours Needed`, `Hours Averaged`) %>%
+    ggplot(aes(x = `Grade`, y = `Sleep`, fill = `Hours`)) +
+    geom_bar(stat = 'identity', position = 'dodge') +
+    theme_bw() +
+    theme(axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.x = element_text(size = 14),
+          axis.text.y = element_text(size = 14),
+          legend.position = "bottom") +
+    coord_flip() 
+
+```
+
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Scatterplot of Age vs Slept Hours Missed
+
+```{r}
+
+df %>%
+    select(`Grade`, `diff`, `age`) %>%
+    ggplot(aes(x = `age`, y = `diff`)) +
+    xlab("Student Age") +
+    ylab("Hours Missed") +
+    geom_point(size = 2) +
+    stat_smooth(method = lm) +
+    theme_bw() +
+    theme(axis.title.x = element_text(size = 14),
+          axis.text.x = element_text(size = 12),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 12))
+
+
+```
+
+### Results 
+
+
+
+
+`r tab1`
+
+Over time, the difference between the amount needed and the amount obtained is increasing. A students year in school was translated to a student's age. On average, a student at any time is losing `r round(summary(mod1)$coefficients, 3)[1,1]` hours. Incrementally, as the students age increases, the difference increases by `r round(summary(mod1)$coefficients, 3)[2,1]` hours ( p = 0.001). 
+
+These results are evidence to consider the factors pointed out savvysleeper's [article](https://savvysleeper.org/costing-kids-sleep/) seriously. 
+
+Data source: https://data.world/makeovermonday/2020w9
+

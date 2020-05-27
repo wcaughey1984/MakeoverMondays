@@ -152,22 +152,13 @@ home1718 <- df2 %>%
 
 
 
-
 ```
-
-
-
-This week's Makeover is from the Australian Specialist Homelessness Services. The data will be collected from [data.world]("https://data.world/makeovermonday/2020w8"). There are two main questions I want to answer. First, I want to know the dropout rate from year to year. The second question I want to answer is did the intervention work? 
 
 
 Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Drop Out Rate
-
-A client will have dropped out if `Client situation at end of support == "Unknown"`.
-
-Over the study duration, the drop out rate remained less than 8% from year to year. This is an incredible dropout rate. This also speaks to the researchers doing a fantastic job keeping connected with clients.
 
 ```{r}
 
@@ -176,11 +167,8 @@ ggarrange(comp1415, comp1516, comp1617, comp1718,
 
 ```
 
-Column {data-width=500}
------------------------------------------------------------------------
+### Did the intervention work?
 
-### Chart B
-blah
 ```{r}
 
 ggarrange(home1415, home1516, home1617, home1718,
@@ -189,3 +177,19 @@ ggarrange(home1415, home1516, home1617, home1718,
 
 ```
 
+
+
+
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Summary
+
+This week's Makeover is from the Australian Specialist Homelessness Services. The data will be collected from [data.world]("https://data.world/makeovermonday/2020w8"). There are two main questions I want to answer. First, I want to know the dropout rate from year to year. The second question I want to answer is did the intervention work? 
+
+A client will have dropped out if `Client situation at end of support == "Unknown"`.
+
+Over the study duration, the drop out rate remained less than 8% from year to year. This is an incredible dropout rate. This also speaks to the researchers doing a fantastic job keeping connected with clients.
+
+Now, we address if the intervention worked. At first glance, the answer may be no; however, this is not accurate. As the 'Homeless-Homeless' category begins to shirt in size, the 'Homeless-At risk' category begins to increase. So, yes, over time this program seems to be working.
