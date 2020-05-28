@@ -1,0 +1,90 @@
+---
+title: "Makeover Monday 2020w1"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(httr)
+library(readxl)
+library(tidyverse)
+
+knitr::opts_chunk$set(echo = TRUE, warning = F, comment = F, message = F)
+
+```
+
+
+lkjl;kjlk;jlkjlk;jl;kjl;kjlk;jl;kjl;k
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Big Sports
+
+```{r, echo = F}
+
+
+url <- "https://query.data.world/s/zp2tntamk33imxhn5ignqyh5xhh6bn"
+invisible(capture.output(GET(url, write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf)
+
+df1 <- df %>%
+  gather(key = "year", value = "percent", 
+         `2017`, `2013`, `2008`, `2007`, `2006`, `2005`,`2004`)
+
+sports_cats <- function(x){
+  if(x %in% c("Football","Basketball","Baseball","Ice hockey","Soccer","None")){
+    return("Big Sports")
+  } else {
+    return("Little Sports")
+  }
+}
+
+df2 <- df1 %>%
+  mutate(sport_cat = sapply(X = Sport, FUN = sports_cats))
+
+year_tots_big <- df2 %>%
+  filter(sport_cat == "Big Sports") %>%
+  group_by(sport_cat, year) %>%
+  summarize(total_perc = sum(percent)) 
+  
+year_tots_little <- df2 %>%
+  filter(sport_cat == "Little Sports") %>%
+  group_by(sport_cat, year) %>%
+  summarize(total_perc = sum(percent)) 
+
+df3 <- df2 %>%
+  left_join(y = year_tots_big, by = c("sport_cat" = "sport_cat","year" = "year")) %>%
+  left_join(y = year_tots_little, by = c("sport_cat" = "sport_cat","year" = "year")) %>%
+  mutate(total_perc = ifelse(is.na(total_perc.x) == FALSE, total_perc.x, total_perc.y)) %>%
+  select(-total_perc.x, - total_perc.y) %>%
+  mutate(new_perc = round((percent / total_perc) * 100)) %>%
+  select(-percent) %>%
+  rename(percent = new_perc)
+  
+df3 %>% 
+  filter(sport_cat == "Big Sports") %>%
+  ggplot(aes(x = year, y = percent, group = Sport, col = Sport)) +
+  geom_line()  
+
+
+
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+
+### Little Sports
+
+```{r, echo = F}
+
+df3 %>% 
+  filter(sport_cat == "Little Sports") %>%
+  ggplot(aes(x = year, y = percent, group = Sport, col = Sport)) +
+  geom_line() 
+
+```
+

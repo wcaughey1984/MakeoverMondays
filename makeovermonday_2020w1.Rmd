@@ -1,0 +1,208 @@
+---
+title: "Makeover Monday 2020w1"
+author: "Billy Caughey"
+date: "5/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, comment = F, message = F)
+```
+
+## Introduction
+
+(REALLY, REALLY, REALLY BELATED) HAPPY NEW YEAR! As an R programmer, I love finding new and interesting opportunities to practice R. The Makeover Monday social project provides this opportunity. My goal is to not only produce a visual I think actually improves the chart, but also my thought process. It's my hope that we can learn together and become better at programming in R.
+
+I should note the focus will be primarily on how to use the `ggplot2` package in R. In the rare chance the data presented can be pushed to statistical analysis, it will be done. I won't force this often, but if it happens, we will get our math on!
+
+Let's get into it!
+
+## Purpose
+
+Sports. What a great topic! I, like many other sports fans, could talk sports for hours! This week's challenge is from the article ["40 maps and charts that explain sports in America"](https://www.vox.com/2014/10/14/6951261/sports-maps-charts). The particular chart in this article I will be focusing on is in figure 1.
+
+```{r mm viz, fig.align = 'center', out.width = "75%", echo = FALSE, fig.cap = "Fig. 1: Makeover Monday W1 Viz", cache = TRUE}
+
+library(knitr)
+library(png)
+
+img1_path <- "makeovermonday_2020w1_image.png"
+
+include_graphics(img1_path)
+
+```
+
+### What works...
+
+Here is what I like about this chart - it's simple! The authors focused on the big 3 sports in the United States. This chart also fits intiution as well. Football is definitely a strong sport in the United States. What doesn't fit the narrative is how basketball is so low. I would have thought basketball would have jumped. Granted, the timeline only considers to 2012 (or so). This suggests the LeBron James' Miami Heat may not have picked up a lot of speed. 
+
+### What doesn't work...
+
+I am a huge fan of axis labels! The x-axis is pretty intiutive, but the y-axis is not. The other item I am struggling with is where is hockey and soccer. These sports are popular in the United States. Maybe not as popular as the big 3, but they are popular. I would like to see two other categories as well: other and none. Other being any sport outside of the big 3 (big 5 if we consider soccer or hockey). None would be survey respondants who don't report watching sports. Sometimes the survey participants who report no 'treatment' (watching sports) is just as interesting as those who watch sports.
+
+### What I think I can improve...
+
+Right off the bat that y-axis label will be in the chart! Next, I want to add soccer and hockey as well. They are popular sports in the United States or have begun to gain steam in the United States. Finally, some inclusion of 'none' needs to be addressed. This might not be available in the data, but some effort to this topic should be made. 
+
+One additional item I want to add are time points. For instance, there is a jump in Basketball around 1980. To those who know the sport of basketball, this was the rookie seasons of Earvin "Magic" Johnson and Larry Bird. Another point to consider is the drop around 1993. This is the year Michael Jordan retired for the first time. In the sport of baseball, there is a bump around 1998. This was the year Mark McGuire and Sammy Sosa had their historic run to beating the single season homerun record. 
+
+## Bringing in the data 
+
+The data for this analysis is provided by data.world. They have very nicely provided the code needed to import the data into R. A good habit is to call the `str` function to see what the data set looks like.
+
+```{r import data}
+
+library(httr)
+library(readxl)
+
+url <- "https://query.data.world/s/zp2tntamk33imxhn5ignqyh5xhh6bn"
+invisible(capture.output(GET(url, write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf)
+
+str(df)
+
+```
+
+So, the data set has an interesting shape. The first column is the sport name, and each column is the percent reported for that year. There are 8 years reported in this set... a might short from what the original chart shows. We will move forward with this set, but there is a high probability I might go back for the original data set. 
+
+## Pre-Processing 
+
+An important part of any analysis is the cleaning of the data. The 80/20 rule applies here. Chances are we spend 80% of the time on cleaning the data and getting it into the right form. This also includes going back for the larger set. 
+
+In R, there is a term I love: tidy data. This means each row is an individual observation, and each column is a variable. The data will be structured into this format. The `gather` function from the `tidyverse` will be used to do this.
+
+```{r cleaning up data}
+
+library(tidyverse)
+
+df1 <- df %>%
+  gather(key = "year", value = "percent", 
+         `2017`, `2013`, `2008`, `2007`, `2006`, `2005`,`2004`)
+
+```
+
+With the data in the correct tidy format, let's see what sports are in the data set. I'm going to start visualizing now and clean up as we go. I won't make the `ggplot2` visual clean until later.  
+
+```{r sports}
+
+df1 %>% 
+  ggplot(aes(x = year, y = percent, group = Sport, col = Sport)) +
+  geom_line()
+
+```
+
+There are a lot more sports than I thought there was going to be. As a funny note, I think watching 'fishing' is kind of funny. Football, basketball, and baseball are all above the rest. What is interesting is the fourth line in the mix with basketball and baseball. This is where a previous hunch was correct! That fourth line is 'None'. This is an important finding! This, at a high level, suggests survey participatns are just as likely to no watch sports as watching basketball and baseball. 
+
+This visual is also showing another story. There are two types of sports watching. There are the big 5 sports, but what about the other sports? These sports are common with the Olympics, sports entertainment (wrestling = WWE?), and sports a sports fan would watch if there is "nothing on" - which usually means one of their top three options isn't available. 
+
+So, here is how we are going to split this up: the big 5 + None will be grouped into 'Big Sports'. The other sports will be grouped into 'Little Sports'. My hunch is we can show what Americans will watch if one of the big 5 is available. Additionally, if the big 5 isn't available, what sports do sports fans turn to?
+
+```{r grouping}
+
+sports_cats <- function(x){
+  if(x %in% c("Football","Basketball","Baseball","Ice hockey","Soccer","None")){
+    return("Big Sports")
+  } else {
+    return("Little Sports")
+  }
+}
+
+df2 <- df1 %>%
+  mutate(sport_cat = sapply(X = Sport, FUN = sports_cats))
+
+year_tots_big <- df2 %>%
+  filter(sport_cat == "Big Sports") %>%
+  group_by(sport_cat, year) %>%
+  summarize(total_perc = sum(percent)) 
+  
+year_tots_little <- df2 %>%
+  filter(sport_cat == "Little Sports") %>%
+  group_by(sport_cat, year) %>%
+  summarize(total_perc = sum(percent)) 
+
+df3 <- df2 %>%
+  left_join(y = year_tots_big, by = c("sport_cat" = "sport_cat","year" = "year")) %>%
+  left_join(y = year_tots_little, by = c("sport_cat" = "sport_cat","year" = "year")) %>%
+  mutate(total_perc = ifelse(is.na(total_perc.x) == FALSE, total_perc.x, total_perc.y)) %>%
+  select(-total_perc.x, - total_perc.y) %>%
+  mutate(new_perc = round((percent / total_perc) * 100)) %>%
+  select(-percent) %>%
+  rename(percent = new_perc)
+  
+df3 %>% 
+  ggplot(aes(x = year, y = percent, group = Sport, col = Sport)) +
+  geom_point() +
+  geom_smooth(se = F, method = "lm") +
+  facet_wrap(. ~ sport_cat)
+
+```
+
+Again, the visual is not pretty, but it is telling a story! Once the big and little sports are separated, there is still another group shown in the little sports. These sports are the very niche or seasonal sports:
+
+* Rodeo
+* Track and field
+* Fishing
+* Swimming
+* Wrestling 
+* Bowling
+* No opinion
+
+These sports are typically watched in the Olympics or by fans who are specifically interested in them. For instance, a lot of people enjoy going fishing or bowling, but chances are they are not vested enough in the sport to watch them on TV. These sports will be removed from the analysis. In doing so, this is the resulting visual.
+
+```{r grouping1}
+
+sports_cats <- function(x){
+  if(x %in% c("Football","Basketball","Baseball","Ice hockey","Soccer","None")){
+    return("Big Sports")
+  } else {
+    return("Little Sports")
+  }
+}
+
+df2 <- df1 %>%
+  mutate(sport_cat = sapply(X = Sport, FUN = sports_cats))
+
+year_tots_big <- df2 %>%
+  filter(sport_cat == "Big Sports") %>%
+  group_by(sport_cat, year) %>%
+  summarize(total_perc = sum(percent)) 
+  
+year_tots_little <- df2 %>%
+  filter(sport_cat == "Little Sports") %>%
+  group_by(sport_cat, year) %>%
+  summarize(total_perc = sum(percent)) 
+
+df3 <- df2 %>%
+  left_join(y = year_tots_big, by = c("sport_cat" = "sport_cat","year" = "year")) %>%
+  left_join(y = year_tots_little, by = c("sport_cat" = "sport_cat","year" = "year")) %>%
+  mutate(total_perc = ifelse(is.na(total_perc.x) == FALSE, total_perc.x, total_perc.y)) %>%
+  select(-total_perc.x, - total_perc.y) %>%
+  mutate(new_perc = round((percent / total_perc) * 100)) %>%
+  select(-percent) %>%
+  rename(percent = new_perc)
+  
+df3 %>% 
+  ggplot(aes(x = year, y = percent, group = Sport, col = Sport)) +
+  geom_point() +
+  geom_smooth(se = F, method = "lm") +
+  facet_wrap(. ~ sport_cat)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
