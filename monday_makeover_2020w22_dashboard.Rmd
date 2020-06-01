@@ -77,7 +77,9 @@ __Summary__
 
 Over time there has been a shift. This shift is seen by people outside the police starting to refer women to Home Shelters. Since 2019, those who are not volunteers or police have made several referrals for women haing FGM. This suggests people have knowledge of what is going on and know how to react. 
 
-When reviewing health status, the two largest were _healthy_ and _UTI_. It seems volunteers and othes have been refering a lot of the women with healthy statuses. For those with UTI, it seems others and police have made the referrals. One could wager a patient would not talk to a person on the road about UTI. They most definitely could talk to a leader, friend, or family to mention a few.  
+When reviewing health status, the two largest were _healthy_ and _UTI_. It seems volunteers and othes have been refering a lot of the women with healthy statuses. For those with UTI, it seems others and police have made the referrals. One could wager a patient would not talk to a person on the road about UTI. They most definitely could talk to a leader, friend, or family to mention a few. 
+
+The exploration doc can be found [here](https://github.com/wcaughey1984/MakeoverMondays/blob/master/Makeover%20Monday%202020w22.rmd). The rmarkdown file to review this dashboard is [here](https://github.com/wcaughey1984/MakeoverMondays/blob/master/monday_makeover_2020w22_dashboard.Rmd).
 
 Column {data-width=400}
 -----------------------------------------------------------------------
@@ -122,7 +124,8 @@ df1 %>%
   summarize(arrivals = n()) %>%
   ungroup() %>%
   ggplot(aes(x = arrival_date, y = arrivals, col = who_brought_her1)) +
-  geom_line(size = 2)
+  geom_line(size = 2) +
+  theme(legend.title = element_blank()) 
 
 ```
 
@@ -137,6 +140,7 @@ healthy_who %>%
   xlab("Arrival Month") +
   ylab("Percentage of Arrivals") +
   scale_y_continuous(labels = percent) +
+  theme(legend.title = element_blank()) +
   facet_wrap(. ~ health_status, nrow = 2) 
 
 ```
