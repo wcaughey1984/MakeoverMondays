@@ -1,0 +1,140 @@
+---
+title: "Makeover Monday 2020w2 Exploration"
+author: "Billy Caughey"
+date: "May 30, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This is my week 2 submission for the Makeover Monday experiment. I am really excited about this problem because there is a lot of set theory going on. There will be some matrix algebra going on and I'm looking to use a Venn diagram. Not sure how I am going to do it yet, but it will happen!
+
+## Purpose
+
+For this week 2, we are considering the pesticides approved into the United States but not into other countries. Specifically, the other regions we are considering are EU, Brazil, and China. The visual for this week is below in figure 1.
+
+```{r mm viz, fig.align = 'center', out.width = "75%", echo = FALSE, fig.cap = "Fig. 1: Makeover Monday W2 Viz", cache = TRUE}
+
+library(knitr)
+library(png)
+
+img1_path <- "makeover_monday_wee2_challenge.png"
+
+include_graphics(img1_path)
+
+```
+
+This viz shows a lot of information. Overall, there are 72, 17, and 11 banned pesticides in the EU, Brazil, and China which are approved in the United States. It's very nice the numbers add up to 100 - isn't it? The United States and the EU being different isn't unnatural. The EU usually is more liberal in their pesticide use than the United States. 
+
+Brazil and China having such a small number of banned pesticides is natural. The United States imports a lot of food from both these countries. That means it would be in the United States's interest to align on pesticides.
+
+What I would like to know, is the number of pesticides shared between countries and the United States. This will require some matrix algebra and a Venn diagram. In this situation, a Venn diagram will probably look just as nice as this bar chart.
+
+##### Bring in the data #####
+
+For this analysis, I will bring in the data only to show how to read the data in. With that said, chances are a new data set will need to be established from the results of the matrix algebra.
+
+```{r data import}
+
+library(httr)
+library(readxl)
+url <- "https://query.data.world/s/h2y64h7jm7wgvux5hwyumkbnrhvuop"
+invisible(capture.output(GET(url, write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf)
+print(df)
+
+```
+
+So, with the data in, I want to build some sort of Venn diagram. The data and the graph do not align. The data shows the probabilities of each country to the United States. These figures lend themselves to a Venn diagram nicely. For review, a Venn diagram is shown in figure 2.
+
+```{r venn diagram ex, fig.align = 'center', out.width = "75%", echo = FALSE, fig.cap = "Fig. 2: Basic venn Diagram", cache = TRUE}
+
+library(knitr)
+library(png)
+
+img1_path <- "venn diagram.png"
+
+include_graphics(img1_path)
+
+```
+
+From this chart, we will use the following variables:
+
+$$ x = A \cap B \\
+y = A \cap C \\
+z = B \cap C \\
+w = (A \cup B \cup C)' $$
+
+Using the data, here is what is known from the data.
+
+$$ P(EU) = A + x + y + 1.2 = 26.9 \\
+P(BRA) = B + x + z + 1.2 = 2.2 \\
+P(CHN) = C + z + y + 1.2 = 3.3 \\
+P(EU \cup BRA \cup CHN) = A + B + C + x + y + z + 1.2 = 27.3$$ 
+
+We also are given what the probabilities of selecting all three countries is. This leads to the following:
+
+$$ P(Selecting 2 countries) = P(at least 2) - P(all 3) = 3.8 - 1.2 = 2.6 \\
+P(Selecting 1 country) = P(at least 1) - P(at least 2) = 27.3 - 3.8 = 23.5 $$
+
+This gives six equations with six unknowns. This is the perfect scenario to solve for this problem. 
+
+### Matrix Algebra
+
+There are two direct ways to solve for these unknowns. The first is to just plug and chug. This method is nice if there was two unknowns and equations, but three is just a touch long. The other method is matrix algebra and solving a matrix. This method is really nice as long as the unknowns and equations are equal in number. For this case, it's 3's for both.
+
+What is necessary now is to set up the matrix. The matrix will look like this:
+
+```{r matrix build}
+
+my_values <- c(1,0,0,1,1,0,25.7,
+               0,1,0,1,0,1,1.0,
+               0,0,1,0,1,1,2.1,
+               1,1,1,1,1,1,26.1,
+               1,1,1,0,0,0,23.5,
+               0,0,0,1,1,1,2.6)
+
+my_matrix <- matrix(my_values, 
+                    nrow = 6,
+                    ncol = 7,
+                    byrow = TRUE,
+                    dimnames = list(c("EU","BRA","CHN","1+","Only 1","Only 2"),
+                                    c("A","B","C","x","y","z","Total")))
+
+print(my_matrix)
+
+```
+
+The goal to solve this matrix is to find the reduce row echelon form. This form will solve for all 6 variables. What is essentially happening is we are considering all six equations at the same time. Nicely enough, R has a function that will do this for us: `rref()`. This function comes from the _pracma_ library. Let's apply this function and get our values.
+
+```{r matrix algebra}
+
+library(pracma)
+
+rref(my_matrix)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/621978/233b876e7d3e46c0843c1f06f8193f99
+bundleId: https://api.rpubs.com/api/v1/document/621978/233b876e7d3e46c0843c1f06f8193f99
+url: http://rpubs.com/wgcaughey1984/621978
+when: 1590897755.77951

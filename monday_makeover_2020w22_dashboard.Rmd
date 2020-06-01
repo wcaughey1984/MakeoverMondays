@@ -1,0 +1,143 @@
+---
+title: "Makeover Monday 2020w22 Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = F, message = F, warning = F, comment = F)
+
+library(flexdashboard)
+library(tidyverse)
+library(scales)
+library(lubridate)
+library(kableExtra)
+
+url <- "https://query.data.world/s/bpvpqxcoryydvbjzoaucp62jooect6"
+
+df <- df <- read.csv(file = url, header=TRUE, stringsAsFactors=FALSE) %>%
+  rename(arrival_date = Date.of.arrival.at.Safe.House,
+         age_at_arrival = Age.on.arrival.in.years,
+         school = Do.you.go.to.school.,
+         type_of_case = Type.of.case,
+         health_status_healthy = Health.Status.Healthy,
+         health_status_sti = Health.Status.STI,
+         health_status_uti = Health.Status.UTI,
+         health_status_pregnant = Health.Status.Pregnant,
+         health_status_other = Health.Status.Other.health.issue,
+         needed_clothes = Immediate.needs.on.arrival.Clothes,
+         needed_underwear = Immediate.needs.on.arrival.Underwear,
+         needed_shoes = Immediate.needs.on.arrival.Shoes,
+         needed_counselling = Immediate.needs.on.arrival.Counselling,
+         needed_other = Immediate.needs.on.arrival.Other,
+         who_brought_her = Who.brought.her.to.the.Safe.House,
+         suggestions_from_swo = Suggestion.from.social.welfare.officer) %>%
+  mutate(arrival_date = floor_date(as.Date(arrival_date, format = "%Y-%m-%d"),
+                                   unit = "month"))
+
+total_arrivals <- df %>%
+  select(arrival_date) %>%
+  group_by(arrival_date) %>%
+  summarize(arrivals = n()) 
+
+df1 <- df %>%
+  mutate(who_brought_her1 = ifelse(who_brought_her %in% c("volunteer","police"), 
+                                   who_brought_her, "other")) 
+
+healthy <- df1 %>%
+  select(ID, arrival_date, health_status_healthy, health_status_sti,
+         health_status_uti, health_status_pregnant, health_status_other) %>%
+  gather(health_status, indicator, health_status_healthy:health_status_other) %>%
+  group_by(arrival_date, health_status) %>%
+  summarize(arrivals = sum(indicator, na.rm = T)) %>%
+  ungroup() %>%
+  left_join(y = total_arrivals, by = "arrival_date") %>%
+  mutate(percentage = arrivals.x / arrivals.y)
+
+healthy_who <- df1 %>%
+  select(ID, arrival_date, who_brought_her1, health_status_healthy, health_status_sti,
+         health_status_uti, health_status_pregnant, health_status_other) %>% 
+  gather(health_status, indicator, health_status_healthy:health_status_other) %>%
+  group_by(arrival_date, health_status, who_brought_her1) %>%
+  summarize(arrivals = sum(indicator, na.rm = T)) %>%
+  left_join(y = df1 %>% 
+                  select(arrival_date, who_brought_her1) %>%
+                  group_by(arrival_date, who_brought_her1) %>%
+                  summarize(arrivals = n()), 
+                            by = c("arrival_date" = "arrival_date", 
+                                   "who_brought_her1" = "who_brought_her1")) %>%
+  mutate(percentage = arrivals.x / arrivals.y)
+
+```
+
+__Summary__
+
+Over time there has been a shift. This shift is seen by people outside the police starting to refer women to Home Shelters. Since 2019, those who are not volunteers or police have made several referrals for women haing FGM. This suggests people have knowledge of what is going on and know how to react. 
+
+When reviewing health status, the two largest were _healthy_ and _UTI_. It seems volunteers and othes have been refering a lot of the women with healthy statuses. For those with UTI, it seems others and police have made the referrals. One could wager a patient would not talk to a person on the road about UTI. They most definitely could talk to a leader, friend, or family to mention a few.  
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Total Arrivals
+
+```{r}
+
+total_arrivals %>%
+  ggplot(aes(x = arrival_date, y = arrivals)) +
+  geom_line(size = 2) +
+  xlab("Arrival Month") +
+  ylab("Arrivals")
+
+```
+
+### Health Status ('Healthy' and 'UTI' classification)
+
+```{r}
+
+healthy %>%
+  filter(health_status %in% c("health_status_healthy","health_status_uti")) %>%
+  ggplot(aes(x = arrival_date, y = percentage)) +
+  geom_line(size = 2) +
+  xlab("Arrival Month") +
+  ylab("Percentage of Arrivals") +
+  scale_y_continuous(labels = percent) +
+  facet_wrap(. ~ health_status, nrow = 2)
+
+```
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+
+### Total Arrivals by Who Brought them to the shelter
+
+```{r}
+
+df1 %>%
+  select(arrival_date, who_brought_her1) %>%
+  group_by(arrival_date, who_brought_her1) %>%
+  summarize(arrivals = n()) %>%
+  ungroup() %>%
+  ggplot(aes(x = arrival_date, y = arrivals, col = who_brought_her1)) +
+  geom_line(size = 2)
+
+```
+
+### Health Status by Who Brought them to the shelter ('Healthy' and 'UTI' classification)
+
+```{r}
+
+healthy_who %>%
+  filter(health_status %in% c("health_status_healthy","health_status_uti")) %>%
+  ggplot(aes(x = arrival_date, y = percentage, col = who_brought_her1)) +
+  geom_line(size = 2) +
+  xlab("Arrival Month") +
+  ylab("Percentage of Arrivals") +
+  scale_y_continuous(labels = percent) +
+  facet_wrap(. ~ health_status, nrow = 2) 
+
+```
+

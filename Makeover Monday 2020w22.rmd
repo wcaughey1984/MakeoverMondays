@@ -1,0 +1,237 @@
+---
+title: "Makeover Monday 2020w22"
+author: "Billy Caughey"
+date: "May 31, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F, comment = F)
+```
+
+## Purpose
+
+It's #MakeoverMonday again! I was super pumped to get into this weeks data. Then I saw the topic and felt sick. As an American, more specifically a white American male, this is something I have heard of but have very little context of. In some course work at the University of Utah, I heard of female genital mutilation but only in passing. 
+
+Now that I have had the time to read to documents, I'm excited to get into exploring this data set. Yes, I will little context outside the documents provided, but I will still do my very best to explore and find something cool! This topic deserves to be explored by the brightest minds to find a way to stop it.
+
+The visual I will be trying to recreate or improve on is below in figure 1.
+
+```{r mm viz, fig.align = 'center', out.width = "75%", echo = FALSE, fig.cap = "Fig. 1: Makeover Monday W22 Viz", cache = TRUE}
+
+library(knitr)
+library(png)
+
+img1_path <- "Dashboard for Makeover 2020w22.png"
+
+include_graphics(img1_path)
+
+```
+
+## Data import
+
+Let's do what we normally do and import the data from data.world. This week's data is in the form of a downloadable csv file. We will include some data clean up as well.
+
+```{r import data}
+
+library(tidyverse)
+library(lubridate)
+
+url <- "https://query.data.world/s/bpvpqxcoryydvbjzoaucp62jooect6"
+
+df <- df <- read.csv(file = url, header=TRUE, stringsAsFactors=FALSE) %>%
+  rename(arrival_date = Date.of.arrival.at.Safe.House,
+         age_at_arrival = Age.on.arrival.in.years,
+         school = Do.you.go.to.school.,
+         type_of_case = Type.of.case,
+         health_status_healthy = Health.Status.Healthy,
+         health_status_sti = Health.Status.STI,
+         health_status_uti = Health.Status.UTI,
+         health_status_pregnant = Health.Status.Pregnant,
+         health_status_other = Health.Status.Other.health.issue,
+         needed_clothes = Immediate.needs.on.arrival.Clothes,
+         needed_underwear = Immediate.needs.on.arrival.Underwear,
+         needed_shoes = Immediate.needs.on.arrival.Shoes,
+         needed_counselling = Immediate.needs.on.arrival.Counselling,
+         needed_other = Immediate.needs.on.arrival.Other,
+         who_brought_her = Who.brought.her.to.the.Safe.House,
+         suggestions_from_swo = Suggestion.from.social.welfare.officer) %>%
+  mutate(arrival_date = floor_date(as.Date(arrival_date, format = "%Y-%m-%d"),
+                                   unit = "month"))
+
+str(df)
+
+```
+
+## Exploratory Data Analysis
+
+One of my first questions is what are the number of arrivals per day over time? If the numbers are increasing, then more women are using the program (winning!). In addition, I'd like to see where the girls come from (district), who brought them, and the girls education.
+
+For number of arribals per day we just need to count the number of records per day. It's pretty straight forward. This looks similar to the figure we saw in the original visual. Now, let's dig into where the girls are coming from over time.
+
+```{r arrivals}
+
+total_arrivals <- df %>%
+  select(arrival_date) %>%
+  group_by(arrival_date) %>%
+  summarize(arrivals = n()) 
+
+total_arrivals %>%
+  ggplot(aes(x = arrival_date, y = arrivals)) +
+  geom_line(size = 2) +
+  xlab("Arrival Month") +
+  ylab("Arrivals")
+
+```
+
+This looks similar to the figure we saw in the original visual. Now, let's dig into where the girls are coming from over time.
+
+```{r where did they come from, fig.width = 10}
+
+library(kableExtra)
+
+table(df$Region) %>%
+  kable(col.names = c("Region","Frequency"), align = 'lc') %>%
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = F)
+
+```
+
+Okay, this might be less exciting. The table suggests the majority of the women are coming from the Mara district. There might be a traveling restriction here. I am betting there is a difficulty in moving from one district to Mara for the safe houses. There probably isn't anything to visualize over time here. Let's move on. We will definitely keep the table on this.
+
+The next question asked was who brought the women in to the Safe House? Like with the previous question, we start with a table. If there isn't one that stands out, then the overtime visual will be produced.
+
+```{r who brought them}
+
+table(df$who_brought_her) %>%
+  kable(col.names = c("Who","Frequency"), align = 'lc') %>%
+  kable_styling(bootstrap_options = c("striped","hover","condensed"),
+                full_width = F)
+
+```
+
+Okay, there is something interesting here! The big players are the police and volunteers. I want to condense this to three categories: police, volunteers, and other. Once that has been condensed, we will visualize this over time.
+
+```{r who brought them visuals}
+
+df1 <- df %>%
+  mutate(who_brought_her1 = ifelse(who_brought_her %in% c("volunteer","police"), 
+                                   who_brought_her, "other")) 
+
+df1 %>%
+  select(arrival_date, who_brought_her1) %>%
+  group_by(arrival_date, who_brought_her1) %>%
+  summarize(arrivals = n()) %>%
+  ungroup() %>%
+  ggplot(aes(x = arrival_date, y = arrivals, col = who_brought_her1)) +
+  geom_line(size = 2)
+
+```
+
+This is a very cool story! The majority of ladies who were brought to the safe house before 2019 were brought in by the police and volunteers. This probably indicates volunteers were trying to spread the word and find these ladies. Additionally, the police probably were directing these women to the safe houses when they found these women after the fact. 
+
+After 2019, the story changes. After 2019, the other category springs into action! This means everyone else in the lives of these women are starting to step up. To me, this is an indicator of the program getting out and going. When people are educated about options to help their friends, they usually jump at the chance. 
+
+Now that we have figured out who is introducing these ladies to the safe houses, let's look into their health status. This, being 100 percent transparent, scares me. I am pretty sure my heart is about to be pulled.
+
+```{r health status}
+
+library(scales)
+
+healthy <- df1 %>%
+  select(ID, arrival_date, health_status_healthy, health_status_sti,
+         health_status_uti, health_status_pregnant, health_status_other) %>%
+  gather(health_status, indicator, health_status_healthy:health_status_other) %>%
+  group_by(arrival_date, health_status) %>%
+  summarize(arrivals = sum(indicator, na.rm = T)) %>%
+  ungroup() %>%
+  left_join(y = total_arrivals, by = "arrival_date") %>%
+  mutate(percentage = arrivals.x / arrivals.y)
+
+#healthy %>%
+#  ggplot(aes(x = arrival_date, y = arrivals.x)) +
+#  geom_line(size = 2) +
+#  xlab("Arrival Month") +
+#  ylab("Arrivals") +
+#  facet_wrap(. ~ health_status, nrow = 2) 
+
+healthy %>%
+  ggplot(aes(x = arrival_date, y = percentage)) +
+  geom_line(size = 2) +
+  xlab("Arrival Month") +
+  ylab("Percentage of Arrivals") +
+  scale_y_continuous(labels = percent) +
+  facet_wrap(. ~ health_status, nrow = 2) 
+
+```
+
+In most situations, the percentage of arrivals are either healthy or have a UTI. Since the two are not intersecting, we can see how the two are inversely correlated.
+
+```{r health status healthy vs uti}
+
+healthy %>%
+  filter(health_status %in% c("health_status_healthy","health_status_uti")) %>%
+  ggplot(aes(x = arrival_date, y = percentage)) +
+  geom_line(size = 2) +
+  xlab("Arrival Month") +
+  ylab("Percentage of Arrivals") +
+  scale_y_continuous(labels = percent) +
+  facet_wrap(. ~ health_status, nrow = 2) 
+
+```
+
+What if we took this one step further? What if we broke it out by who brought them in?
+
+```{r health status healthy vs uti who brought them in}
+
+healthy_who <- df1 %>%
+  select(ID, arrival_date, who_brought_her1, health_status_healthy, health_status_sti,
+         health_status_uti, health_status_pregnant, health_status_other) %>% 
+  gather(health_status, indicator, health_status_healthy:health_status_other) %>%
+  group_by(arrival_date, health_status, who_brought_her1) %>%
+  summarize(arrivals = sum(indicator, na.rm = T)) %>%
+  left_join(y = df1 %>% 
+                  select(arrival_date, who_brought_her1) %>%
+                  group_by(arrival_date, who_brought_her1) %>%
+                  summarize(arrivals = n()), 
+                            by = c("arrival_date" = "arrival_date", 
+                                   "who_brought_her1" = "who_brought_her1")) %>%
+  mutate(percentage = arrivals.x / arrivals.y)
+
+healthy_who %>%
+  filter(health_status %in% c("health_status_healthy","health_status_uti")) %>%
+  ggplot(aes(x = arrival_date, y = percentage, col = who_brought_her1)) +
+  geom_line(size = 2) +
+  xlab("Arrival Month") +
+  ylab("Percentage of Arrivals") +
+  scale_y_continuous(labels = percent) +
+  facet_wrap(. ~ health_status, nrow = 2) 
+
+```
+
+Here is something interesting! Those women who are brought in with a 'healthy' status are brought by volunteers and others. Conversely, those who have a UTI are brought in far more often by police and others. In this case, those who have UTI are less likely to share their condition with a volunteer. They probably feel more comfortable with sharing their condition with a doctor, friend, family, or someone else. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

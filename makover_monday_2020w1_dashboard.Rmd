@@ -17,7 +17,13 @@ knitr::opts_chunk$set(echo = TRUE, warning = F, comment = F, message = F)
 ```
 
 
-lkjl;kjlk;jlkjlk;jl;kjl;kjlk;jl;kjl;k
+__Summary:__
+
+The takeaway is Americans still enjoy the sport of football. Does this surprise me? No, not at all. What does surprise me is the increase of the "None" category in the big sports. What does this suggest? American's are either watching Football or nothing. This isn't too surprising at all either. 
+
+With the little sports there is an interesting trend. When the niche or Olympic sports are removed, Americans are looking at 'other' sports. What sport, or sports, could be included in this category? I surmise the inclusion of soccer, rugby, and lacrosse in the least. These sports are growing in America. It would only make sense they are being watched more regularly as 'little' sports.
+
+My full exploration is [here](https://rpubs.com/wgcaughey1984/621978).
 
 Column {data-width=500}
 -----------------------------------------------------------------------
@@ -38,8 +44,12 @@ df1 <- df %>%
 sports_cats <- function(x){
   if(x %in% c("Football","Basketball","Baseball","Ice hockey","Soccer","None")){
     return("Big Sports")
+  } else if(x %in% c("Rodeo","Track and field","Fishing","Swimming","Bowling",
+                     "No opinion","Gymnastics","Ice/Figure skating","Wrestling",
+                     "Volleyball")){
+    return("Seasonal")
   } else {
-    return("Little Sports")
+      return("Little Sports")
   }
 }
 

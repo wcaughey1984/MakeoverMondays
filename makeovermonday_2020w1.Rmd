@@ -1,7 +1,7 @@
 ---
-title: "Makeover Monday 2020w1"
+title: "Makeover Monday 2020w1 Exploration"
 author: "Billy Caughey"
-date: "5/26/2020"
+date: "5/30/2020"
 output: html_document
 ---
 
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = F, comment = F, message = F)
 
 ## Introduction
 
-(REALLY, REALLY, REALLY BELATED) HAPPY NEW YEAR! As an R programmer, I love finding new and interesting opportunities to practice R. The Makeover Monday social project provides this opportunity. My goal is to not only produce a visual I think actually improves the chart, but also my thought process. It's my hope that we can learn together and become better at programming in R.
+(REALLY, REALLY, REALLY BELATED) HAPPY NEW YEAR! As an R programmer, I love finding new and interesting opportunities to practKice R. The Makeover Monday social project provides this opportunity. My goal is to not only produce a visual I think actually improves the chart, but also my thought process. It's my hope that we can learn together and become better at programming in R.
 
 I should note the focus will be primarily on how to use the `ggplot2` package in R. In the rare chance the data presented can be pushed to statistical analysis, it will be done. I won't force this often, but if it happens, we will get our math on!
 
@@ -146,6 +146,9 @@ Again, the visual is not pretty, but it is telling a story! Once the big and lit
 * Wrestling 
 * Bowling
 * No opinion
+* Gymnastics
+* Ice/Figure skating
+* Wrestling
 
 These sports are typically watched in the Olympics or by fans who are specifically interested in them. For instance, a lot of people enjoy going fishing or bowling, but chances are they are not vested enough in the sport to watch them on TV. These sports will be removed from the analysis. In doing so, this is the resulting visual.
 
@@ -154,8 +157,12 @@ These sports are typically watched in the Olympics or by fans who are specifical
 sports_cats <- function(x){
   if(x %in% c("Football","Basketball","Baseball","Ice hockey","Soccer","None")){
     return("Big Sports")
+  } else if(x %in% c("Rodeo","Track and field","Fishing","Swimming","Bowling",
+                     "No opinion","Gymnastics","Ice/Figure skating","Wrestling",
+                     "Volleyball")){
+    return("Seasonal")
   } else {
-    return("Little Sports")
+      return("Little Sports")
   }
 }
 
@@ -181,15 +188,32 @@ df3 <- df2 %>%
   select(-percent) %>%
   rename(percent = new_perc)
   
-df3 %>% 
+big_sport <- df3 %>% 
+  filter(sport_cat == "Big Sports") %>%
   ggplot(aes(x = year, y = percent, group = Sport, col = Sport)) +
   geom_point() +
   geom_smooth(se = F, method = "lm") +
-  facet_wrap(. ~ sport_cat)
+  ggtitle("Big Sports watched among Americans")
+
+
+little_sport <- df3 %>% 
+  filter(sport_cat == "Little Sports") %>%
+  ggplot(aes(x = year, y = percent, group = Sport, col = Sport)) +
+  geom_point() +
+  geom_smooth(se = F, method = "lm") +
+  ggtitle("Little Sports watched among AmericansK")
+
+library(ggpubr)
+
+ggarrange(big_sport, little_sport, 
+          ncol = 1,
+          nrow = 2)
 
 ```
 
+So, in the end, this is the final visual. The takeaway is Americans still enjoy the sport of football. Does this surprise me? No, not at all. What does surprise me is the increase of the "None" category in the big sports. What does this suggest? American's are either watching Football or nothing. This isn't too surprising at all either. 
 
+With the little sports there is an interesting trend. When the niche or Olympic sports are removed, Americans are looking at 'other' sports. What sport, or sports, could be included in this category? I surmise the inclusion of soccer, rugby, and lacrosse in the least. These sports are growing in America. It would only make sense they are being watched more regularly as 'little' sports.
 
 
 
