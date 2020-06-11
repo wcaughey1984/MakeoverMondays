@@ -62,67 +62,31 @@ include_graphics(img1_path)
 
 ```
 
-From this chart, we will use the following variables:
+Unfortunately, the math for this project does not workout. I invite the reader to workout the probability statements. (Hint: There is a linear combination)
 
-$$ x = A \cap B \\
-y = A \cap C \\
-z = B \cap C \\
-w = (A \cup B \cup C)' $$
+I'm pretty sold on building out a Venn diagram, so I need to go back to the base data. With a little reading in the [original article](https://ehjournal.biomedcentral.com/articles/10.1186/s12940-019-0488-0), the supplement data files are provided. For this study, I will be calling in sheets S131 (EU), S132 (China), and S133 (Brazil) from additional file 5. These sheets show the pesticides banned or being phased out in each country that are still active in the United States. Additionally, the pounds used in 2016 are provided. This will provide more information to buildout the Venn diagram.
 
-Using the data, here is what is known from the data.
+```{r new data}
 
-$$ P(EU) = A + x + y + 1.2 = 26.9 \\
-P(BRA) = B + x + z + 1.2 = 2.2 \\
-P(CHN) = C + z + y + 1.2 = 3.3 \\
-P(EU \cup BRA \cup CHN) = A + B + C + x + y + z + 1.2 = 27.3$$ 
+library(readxl)
 
-We also are given what the probabilities of selecting all three countries is. This leads to the following:
+dat_eu <- read_xlsx(path = "12940_2019_488_MOESM5_ESM.xlsx",
+                    sheet = "S131",
+                    skip = 3,
+                    col_names = c("Pesticide","Lbs","Percent"))
 
-$$ P(Selecting 2 countries) = P(at least 2) - P(all 3) = 3.8 - 1.2 = 2.6 \\
-P(Selecting 1 country) = P(at least 1) - P(at least 2) = 27.3 - 3.8 = 23.5 $$
+dat_ch <- read_xlsx(path = "12940_2019_488_MOESM5_ESM.xlsx",
+                    sheet = "S132",
+                    skip = 3,
+                    col_names = c("Pesticide","Lbs","Percent"))
 
-This gives six equations with six unknowns. This is the perfect scenario to solve for this problem. 
+dat_br <- read_xlsx(path = "12940_2019_488_MOESM5_ESM.xlsx",
+                    sheet = "S133",
+                    skip = 3,
+                    col_names = c("Pesticide","Lbs","Percent"))
 
-### Matrix Algebra
-
-There are two direct ways to solve for these unknowns. The first is to just plug and chug. This method is nice if there was two unknowns and equations, but three is just a touch long. The other method is matrix algebra and solving a matrix. This method is really nice as long as the unknowns and equations are equal in number. For this case, it's 3's for both.
-
-What is necessary now is to set up the matrix. The matrix will look like this:
-
-```{r matrix build}
-
-my_values <- c(1,0,0,1,1,0,25.7,
-               0,1,0,1,0,1,1.0,
-               0,0,1,0,1,1,2.1,
-               1,1,1,1,1,1,26.1,
-               1,1,1,0,0,0,23.5,
-               0,0,0,1,1,1,2.6)
-
-my_matrix <- matrix(my_values, 
-                    nrow = 6,
-                    ncol = 7,
-                    byrow = TRUE,
-                    dimnames = list(c("EU","BRA","CHN","1+","Only 1","Only 2"),
-                                    c("A","B","C","x","y","z","Total")))
-
-print(my_matrix)
 
 ```
-
-The goal to solve this matrix is to find the reduce row echelon form. This form will solve for all 6 variables. What is essentially happening is we are considering all six equations at the same time. Nicely enough, R has a function that will do this for us: `rref()`. This function comes from the _pracma_ library. Let's apply this function and get our values.
-
-```{r matrix algebra}
-
-library(pracma)
-
-rref(my_matrix)
-
-```
-
-
-
-
-
 
 
 
