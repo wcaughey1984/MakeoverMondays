@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = F, comment = F, warning = F)
 ```
 
 ## Introduction
@@ -88,9 +88,30 @@ dat_br <- read_xlsx(path = "12940_2019_488_MOESM5_ESM.xlsx",
 
 ```
 
+With the new data in, we need to determine which pesticides are coming between groups. The best way to do that is to use the `VennDiagramm` library. In this library, we will use the `venn.diagram` function. The first venn I will create is the number of pesticides all three groups are banning or phasing out.
 
+```{r venn diagram, echo = F}
 
+library(VennDiagram)
 
+venn.diagram(x = list(dat_eu$Pesticide, dat_ch$Pesticide, dat_br$Pesticide),
+             category.names = c("EU","CH","BR"),
+             filename  = "2020w2_venn_diagram.png",
+             output = TRUE,
+             na = "remove")
+
+```
+
+```{r plot venn diagram}
+
+library(knitr)
+library(png)
+
+img2_path <- "2020w2_venn_diagram.png"
+
+include_graphics(img2_path)
+
+```
 
 
 

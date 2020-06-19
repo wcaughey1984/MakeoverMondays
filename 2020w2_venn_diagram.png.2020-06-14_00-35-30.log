@@ -1,0 +1,15 @@
+INFO [2020-06-14 00:35:30] $x
+INFO [2020-06-14 00:35:30] list(dat_eu$Pesticide, dat_ch$Pesticide, dat_br$Pesticide)
+INFO [2020-06-14 00:35:30] 
+INFO [2020-06-14 00:35:30] $category.names
+INFO [2020-06-14 00:35:30] c("EU", "CH", "BR")
+INFO [2020-06-14 00:35:30] 
+INFO [2020-06-14 00:35:30] $filename
+INFO [2020-06-14 00:35:30] [1] "2020w2_venn_diagram.png"
+INFO [2020-06-14 00:35:30] 
+INFO [2020-06-14 00:35:30] $output
+INFO [2020-06-14 00:35:30] [1] TRUE
+INFO [2020-06-14 00:35:30] 
+INFO [2020-06-14 00:35:30] $na
+INFO [2020-06-14 00:35:30] [1] "remove"
+INFO [2020-06-14 00:35:30] 

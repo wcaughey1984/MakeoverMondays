@@ -1,0 +1,15 @@
+INFO [2020-06-14 00:21:12] $x
+INFO [2020-06-14 00:21:12] list(dat_eu$Pesticide, dat_ch$Pesticide, dat_br$Pesticide)
+INFO [2020-06-14 00:21:12] 
+INFO [2020-06-14 00:21:12] $category.names
+INFO [2020-06-14 00:21:12] c("EU", "CH", "BR")
+INFO [2020-06-14 00:21:12] 
+INFO [2020-06-14 00:21:12] $filename
+INFO [2020-06-14 00:21:12] NULL
+INFO [2020-06-14 00:21:12] 
+INFO [2020-06-14 00:21:12] $output
+INFO [2020-06-14 00:21:12] [1] TRUE
+INFO [2020-06-14 00:21:12] 
+INFO [2020-06-14 00:21:12] $na
+INFO [2020-06-14 00:21:12] [1] "remove"
+INFO [2020-06-14 00:21:12] 

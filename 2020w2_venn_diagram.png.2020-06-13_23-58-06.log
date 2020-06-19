@@ -1,0 +1,13 @@
+INFO [2020-06-13 23:58:06] $x
+INFO [2020-06-13 23:58:06] list(dat_eu$Pesticide, dat_ch$Pesticide, dat_br$Pesticide)
+INFO [2020-06-13 23:58:06] 
+INFO [2020-06-13 23:58:06] $category.names
+INFO [2020-06-13 23:58:06] c("EU", "CH", "BR")
+INFO [2020-06-13 23:58:06] 
+INFO [2020-06-13 23:58:06] $filename
+INFO [2020-06-13 23:58:06] [1] "2020w2_venn_diagram.png"
+INFO [2020-06-13 23:58:06] 
+INFO [2020-06-13 23:58:06] $output
+INFO [2020-06-13 23:58:06] [1] TRUE
+INFO [2020-06-13 23:58:06] 
+ERROR [2020-06-13 23:58:06] NAs in dataset
