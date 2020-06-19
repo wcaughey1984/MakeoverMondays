@@ -8,7 +8,8 @@ output:
 
 ```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(echo = F, message = F, warning = F, comment = F)
+knitr::opts_chunk$set(echo = F, message = F, warning = F, comment = F,
+                      fig.width = 14, fig.height = 10)
 
 library(flexdashboard)
 library(tidyverse)
@@ -81,7 +82,7 @@ When reviewing health status, the two largest were _healthy_ and _UTI_. It seems
 
 The exploration doc can be found [here](https://github.com/wcaughey1984/MakeoverMondays/blob/master/Makeover%20Monday%202020w22.rmd). The rmarkdown file to review this dashboard is [here](https://github.com/wcaughey1984/MakeoverMondays/blob/master/monday_makeover_2020w22_dashboard.Rmd).
 
-Column {data-width=400}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Total Arrivals
@@ -92,7 +93,11 @@ total_arrivals %>%
   ggplot(aes(x = arrival_date, y = arrivals)) +
   geom_line(size = 2) +
   xlab("Arrival Month") +
-  ylab("Arrivals")
+  ylab("Arrivals") +
+  theme(axis.text.x = element_text(size = 24),
+        axis.title.x = element_text(size = 30),
+        axis.text.y = element_text(size = 24),
+        axis.title.y = element_text(size = 30))
 
 ```
 
@@ -107,11 +112,15 @@ healthy %>%
   xlab("Arrival Month") +
   ylab("Percentage of Arrivals") +
   scale_y_continuous(labels = percent) +
+  theme(axis.text.x = element_text(size = 24),
+        axis.title.x = element_text(size = 30),
+        axis.text.y = element_text(size = 24),
+        axis.title.y = element_text(size = 30)) +
   facet_wrap(. ~ health_status, nrow = 2)
 
 ```
 
-Column {data-width=600}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Total Arrivals by Who Brought them to the shelter
@@ -125,7 +134,14 @@ df1 %>%
   ungroup() %>%
   ggplot(aes(x = arrival_date, y = arrivals, col = who_brought_her1)) +
   geom_line(size = 2) +
-  theme(legend.title = element_blank()) 
+  xlab("Arrival Month") +
+  ylab("Arrivals") +
+  theme(legend.title = element_blank()) +
+  theme(axis.text.x = element_text(size = 24),
+        axis.title.x = element_text(size = 30),
+        axis.text.y = element_text(size = 24),
+        axis.title.y = element_text(size = 30),
+        legend.text = element_text(size = 24))
 
 ```
 
@@ -141,6 +157,11 @@ healthy_who %>%
   ylab("Percentage of Arrivals") +
   scale_y_continuous(labels = percent) +
   theme(legend.title = element_blank()) +
+  theme(axis.text.x = element_text(size = 24),
+        axis.title.x = element_text(size = 30),
+        axis.text.y = element_text(size = 24),
+        axis.title.y = element_text(size = 30),
+        legend.text = element_text(size = 24))+
   facet_wrap(. ~ health_status, nrow = 2) 
 
 ```
