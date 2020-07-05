@@ -1,0 +1,28 @@
+---
+title: "Monday Makeover 2020w23"
+author: "Billy Caughey"
+date: "June 7, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = F, message = F, warning = F)
+```
+
+## Introduction
+
+Alright, we have another week of Monday Makeover! Again, I will be doing the first pass in R and them coming back with a nice visual in Tableau. 
+
+
+The visual being analyzed this week is below in figure 1. 
+
+```{r week 23 viz, fig.align = 'center', out.width = "75%", echo = FALSE, fig.cap = "Fig. 1: Viz of the week", cache = TRUE}
+
+library(knitr)
+library(png)
+
+img1_path <- "visual 2020w23.png"
+
+include_graphics(img1_path)
+
+```
