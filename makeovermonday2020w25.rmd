@@ -1,0 +1,109 @@
+---
+title: "Makeover Monday 2020w25"
+author: "Billy Caughey"
+date: "7/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = FALSE, warnings = FALSE, 
+                      message = FALSE)
+```
+
+## Background
+
+This is the only section I will use first person as I am speaking directly to the reader. As an R programming enthusiast, I find my participation in Makeover Monday more of a coding exercise rather than a dashboarding exercise. In the spirit of Makeover Monday, I do what I can to remain consistent with visual analytics and work with the `ggplot2` library. In my experience, data visualization can do a large majority of the analytic lift. I would argue 75-85% of the lift. With that said, the majority of my submissions and explorations are visual in nature. With that said, when the opportunity to exercise statistics, machine learning, artificial intelligence, etc. arises in these exercises, I will take them!
+
+As always, please feel free to leave a comment. I would enjoy the constructive criticism and how I can improve!
+
+## Introduction
+
+Week 25 of [Makeover Monday](https://data.world/makeovermonday/2020w25-amazons-tiny-profits-explained) is about Amazon. One of the commerce giants in the world, Amazon has definitely made an impact. What comes as a learning point is the net income. With a low net income, one must wonder where the revenue went? Amazon is listed as a "for profit" business which means the end goal is to make money; however, the net income suggests otherwise. The net income suggests Amazon is either spending or reinvesting their net income. Most likely, Amazon is reinvesting their money into their business. 
+
+## Critiques of Original Plot
+
+The original plot is pretty clean. It shows the Revenue verses Net Income. Nicely enough, Revenue is plotted on the same visual as Income. The portrayal shows the reader the magnitude of difference between the two.
+
+What is not shown is how much the net income represents in terms of revenue. To do this, an income ratio will be computed and plot. This will be the addition we make to the plot to show what income represents in terms of revenue.
+
+## Bring in data
+
+As always, the data is imported to R from data.world. The data originally has three fields: 
+
+- Quarter
+- Revenue (US $M)
+- Net Income (US $M)
+
+After import, the income ratio will be computed for each quarter. Then, using the `gather` function, the data will be reshaped to long form to prep for plotting.
+
+```{r import data}
+
+##### Libraries #####
+library(tidyverse)
+library(readr)
+library(httr)
+library(readxl)
+library(grid)
+library(gridExtra)
+library(scales)
+
+##### Bring in Data #####
+url <- "https://query.data.world/s/mtrdnivw6h25tdhlgraglcoreg7wj7"
+invisible(capture.output(GET(url, write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf)
+
+mm25 <- df %>%
+  mutate(`Revenue (US $M)` = gsub(",","",`Revenue (US $M)`),
+         `Revenue (US $M)` = gsub("\\$","",`Revenue (US $M)`),
+         `Revenue (US $M)` = as.numeric(`Revenue (US $M)`),
+         `Net Income (US $M)` = gsub(",","",`Net Income (US $M)`),
+         `Net Income (US $M)` = gsub("\\$","",`Net Income (US $M)`),
+         `Net Income (US $M)` = as.numeric(`Net Income (US $M)`),
+         `Income Ratio` = `Net Income (US $M)` / `Revenue (US $M)`) %>%
+  gather(key = Revenue, value = Amount, `Revenue (US $M)`:`Income Ratio`) 
+
+```
+
+## New Visual
+
+The code below shows the new visual used for this analysis. As can be seen, Amazon keeps it's Income Ratio relatively small. What does this mean? The majority of their revenue gets invested or spent. Where this investment is made is not known. One would believe they are investing in their employees more than not.
+
+```{r my visual, fig.width = 15, fig.height = 12}
+
+rev_plot <- mm25 %>%
+  filter(Revenue == "Revenue (US $M)") %>%
+  ggplot(aes(x = Quarter, y = Amount)) +
+  geom_line(aes(group = 1), size = 2) +
+  theme_bw() +
+  ylab("Revenue\n(US $M)") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 20),
+        axis.title.y = element_text(size = 24),
+        axis.text.y = element_text(size = 20)) 
+
+inc_plot <- mm25 %>%
+  filter(Revenue == "Net Income (US $M)") %>%
+  ggplot(aes(x = Quarter, y = Amount)) +
+  geom_line(aes(group = 1), size = 2) +
+  theme_bw() +
+  ylab("Net Income\n(US $M)") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 20),
+        axis.title.y = element_text(size = 24),
+        axis.text.y = element_text(size = 20)) 
+
+ratio_plot <- mm25 %>%
+  filter(Revenue == "Income Ratio") %>%
+  ggplot(aes(x = Quarter, y = Amount)) +
+  geom_line(aes(group = 1), size = 2) +
+  theme_bw() +
+  ylab("Income\nRatio") +
+  theme(axis.title.x = element_text(size = 24),
+        axis.text.x = element_text(size = 20),
+        axis.title.y = element_text(size = 24),
+        axis.text.y = element_text(size = 20)) +
+  scale_y_continuous(labels = percent)
+
+grid.arrange(rev_plot, inc_plot, ratio_plot, nrow = 3)
+
+```

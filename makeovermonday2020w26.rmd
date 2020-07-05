@@ -1,0 +1,205 @@
+---
+title: "Makeover Monday 2020w26"
+author: "Billy Caughey"
+date: "7/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, comment = FALSE, 
+                      warning = FALSE)
+```
+
+## Background
+
+This is the only section I will use first person as I am speaking directly to the reader. As an R programming enthusiast, I find my participation in Makeover Monday more of a coding exercise rather than a dashboarding exercise. In the spirit of Makeover Monday, I do what I can to remain consistent with visual analytics and work with the `ggplot2` library. In my experience, data visualization can do a large majority of the analytic lift. I would argue 75-85% of the lift. With that said, the majority of my submissions and explorations are visual in nature. With that said, when the opportunity to exercise statistics, machine learning, artificial intelligence, etc. arises in these exercises, I will take them!
+
+As always, please feel free to leave a comment. I would enjoy the constructive criticism and how I can improve!
+
+## Introduction
+
+This doc is my exploration of the [Makeover Monday](https://data.world/makeovermonday/2020w26/) week 26 data. The focus of this week is around UN Sustainable Development Goal 5: Achieve gender equality and empower all women and girls. The data for this week is from Visualize Gender Equality - Viz5. 
+
+The overall score for this data ranges from 0 to 100. There are 8 categories with 4 to 5 questions per category. Questions are binary responses. Each category is summed, and the average across all 8 categories are taken. Scores closer to 0 suggest inequality. Scores closer to 100 suggest equality and empowerment. 
+
+## Preprocessing
+
+The data for this exploration is from data.world. Using `read.csv`, the data is imported to R. 
+
+```{r import data}
+
+##### Libraries #####
+library(tidyverse)
+library(readr)
+library(gridExtra)
+library(grid)
+
+##### Bring in data #####
+
+df <- read.csv("https://query.data.world/s/5d5xqmzikfdreafkl7wcaimvvtr4jy", 
+               header = TRUE, 
+               stringsAsFactors = FALSE) 
+
+```
+
+## Taking a look at region
+
+The first question asked was "Has region scores changed over time?" There are 8 regions in the data set are:
+
+- East Asia & Pacific
+- Europe & Central Asia
+- High income: OECD 
+- Latin America & Carribbean
+- Middle East & North Africa
+- South Asia
+- Sub-Saharan Africa
+
+The average for each region was taken and plotted over time. The data spans from 1971 to 2020. The plot is below.
+
+```{r regional plot, fig.align = "center", fig.width = 15, fig.height = 10}
+
+mm1 <- df %>%
+  group_by(Country, Region, WBL.Report.Year, Question.Category) %>%
+  summarize(score = sum(Index.Score, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(Country, Region, WBL.Report.Year) %>%
+  summarize(avg_score = mean(score, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(Region, WBL.Report.Year) %>%
+  summarize(region_avg_score = round(mean(avg_score, na.rm = T), 2))
+
+mm1 %>%
+  ggplot(aes(x = WBL.Report.Year, y = region_avg_score, color = Region)) +
+  geom_line(size = 2) +
+  ylab("Avg. Regional Score") +
+  ggtitle("Regional Average Over Time") +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 18),
+        axis.title.y = element_text(size = 24),
+        axis.text.y = element_text(size = 18),
+        plot.title = element_text(size = 30),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 18))
+
+```
+
+So, this plot shows some interesting things. First, the high income OECD countries are almost universally ahead of other regions. These countries have many opportunities other countries don't have. The regions of Europe & Central Asia and Latin America & Caribbean also see a steady increase. What is also interesting is the remaining regions almost all have a noticeable bend in their trend between 2000 and 2010. 
+
+From this chart, equality and empowerment seems to be on the rise across the globe. Yes, there are some regions which are behind, but for the most part, they are all increasing.
+
+## What about the United States?
+
+Two other questions were asked. First, considering the score of the United States in 1971 and countries close to their score, where are they now? Alternatively, the second question was considering the score in 2020, where did the United States and close scoring countries come from. 
+
+### 1971 forward...
+
+Moving forward from 1971, the countries closest to the United States in score were:
+
+- Canada
+- Denmark 
+- Finland
+- Hungary
+- Iceland
+- Japan
+- Sweden
+
+The plot _clearly_ indicates the United States has fallen behind. In 1971, the United States was extremely close to the top scoring countries in the world. Yet, over the course of time, the United States has fallen behind. There was a large uptick in score around 2016, but the United States did not stay with it's cohort over time.
+
+```{r United States 1971, fig.align = "center", fig.width = 15, fig.height = 10}
+
+mm2 <- df %>%
+  filter(Country %in% c("United States", "Denmark", "Sweden", "Hungary",
+                        "Canada", "Iceland", "Finland", "Japan")) %>%
+  group_by(Country, WBL.Report.Year, Question.Category) %>%
+  summarize(score = sum(Index.Score, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(Country, WBL.Report.Year) %>%
+  summarize(avg_score = mean(score, na.rm = T)) %>%
+  ungroup()
+
+mm2 %>%
+  ggplot(aes(x = WBL.Report.Year, y = avg_score, color = Country)) +
+  geom_line(size = 2) +
+  ggtitle("United States and Similar Countries forward, 1971") +
+  ylab("Avg. Regional Score") +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 14),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14),
+        plot.title = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 14))
+
+```
+
+### 2020 backward...
+
+Looking at where the United States is and then going back, the following countries form this cohort:
+
+- Albania
+- Bulgaria
+- Cyprus
+- Ecuador
+- Hong Kong SAR, China
+- Romania
+- Taiwan, China
+
+In 2020, these countries were very close. In 1971, they really weren't close. The United States started relatively high in this cohort. Yet, when compared to Ecuador and Taiwan, China the United States really hasn't made that much of a change overall. This begins to ask the question if the United States really has had the interest of equality between men and women.
+
+```{r United States 2020, fig.align = "center", fig.width = 15, fig.height = 10}
+
+mm3 <- df %>%
+  filter(Country %in% c("United States", "Albania", "Cyprus", "Taiwan, China",
+                        "Bulgaria", "Romania", "Ecuador", 
+                        "Hong Kong SAR, China")) %>%
+  group_by(Country, WBL.Report.Year, Question.Category) %>%
+  summarize(score = sum(Index.Score, na.rm = T)) %>%
+  ungroup() %>%
+  group_by(Country, WBL.Report.Year) %>%
+  summarize(avg_score = mean(score, na.rm = T)) %>%
+  ungroup() %>%
+  arrange(Country, WBL.Report.Year)
+
+mm3 %>%
+  ggplot(aes(x = WBL.Report.Year, y = avg_score, color = Country)) +
+  geom_line(size = 2) +
+  ggtitle("United States and Similar Countries backward, 2020") +
+  ylab("Avg. Regional Score") +
+  theme_bw() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 14),
+        axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 14),
+        plot.title = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 14))
+
+
+```
+
+## Conclusion
+
+The world has made some changes. Some countries have made great strides to improving balance between men and women. In reviewing the United States, there is something lacking. The United States started with a relatively high score but failed to remain with it's cohort. In fact, when looking retrospectively, the cohort the United States is in actually caught up to the United States over time. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
