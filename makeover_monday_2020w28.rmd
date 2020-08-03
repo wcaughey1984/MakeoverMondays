@@ -1,0 +1,135 @@
+---
+title: "Makeover Monday 2020w28"
+author: "Billy Caughey"
+date: "7/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, comment = F, warning = F)
+```
+
+## Background
+
+This is the only section I will use first person as I am speaking directly to the reader. As an R programming enthusiast, I find my participation in Makeover Monday more of a coding exercise rather than a dashboarding exercise. In the spirit of Makeover Monday, I do what I can to remain consistent with visual analytics and work with the `ggplot2` library. In my experience, data visualization can do a large majority of the analytic lift. I would argue 75-85% of the lift. With that said, the majority of my submissions and explorations are visual in nature. With that said, when the opportunity to exercise statistics, machine learning, artificial intelligence, etc. arises in these exercises, I will take them!
+
+## Introduction
+
+This week's makeover is regarding penguin and flipper length of penguins measured at Palmer Station, Antarctica. Penguins are flightless birds which have excellent aquatic skills. The data for this makeover was built to be an alternative to the `iris` data set for data exploration and visualization. Similar to the `iris` set, there are three species of penguins presented (Adelie, Chinstrap, and Gentoo) with some interesting features. The image presented from this data set is below. The code for this image can be found [here](https://github.com/allisonhorst/palmerpenguins). The data will be read in as part of this code snippet from data.world.
+
+```{r makeover image}
+
+##### Library #####
+
+library(httr)
+library(readxl)
+library(tidyverse)
+library(GGally)
+
+##### Get Data #####
+
+url <- "https://query.data.world/s/xau5hx6wiffvtwk2xqb245rerrcnlu"
+invisible(capture.output(GET(url, write_disk(tf <- tempfile(fileext = ".xlsx")))))
+
+df <- read_excel(tf, 
+                 col_names = TRUE) %>%
+  mutate(`Culmen Length (mm)` = as.numeric(`Culmen Length (mm)`),
+         `Culmen Depth (mm)` = as.numeric(`Culmen Depth (mm)`),
+         `Flipper Length (mm)` = as.numeric(`Flipper Length (mm)`),
+         `Body Mass (g)` = as.numeric(`Body Mass (g)`),
+         `Delta 15 N (o/oo)` = as.numeric(`Delta 15 N (o/oo)`),
+         `Delta 13 C (o/oo)` = as.numeric(`Delta 13 C (o/oo)`),
+         `Date Egg` = as.Date(x = `Date Egg`, format = "%Y-%m-%d"))
+
+mass_flipper <- ggplot(data = df, 
+                       aes(x = `Flipper Length (mm)`,
+                           y = `Body Mass (g)`)) +
+  geom_point(aes(color = Species, 
+                 shape = Species),
+             size = 3,
+             alpha = 0.8) +
+  theme_minimal() +
+  scale_color_manual(values = c("darkorange","purple","cyan4")) +
+  labs(title = "Penguin size, Palmer Station LTER",
+       subtitle = "Flipper length and body mass for Adelie, Chinstrap, and Gentoo Penguins",
+       x = "Flipper length (mm)",
+       y = "Body mass (g)",
+       color = "Penguin species",
+       shape = "Penguin species") +
+  theme(legend.position = c(0.2, 0.7),
+        legend.background = element_rect(fill = "white", color = NA),
+        plot.title.position = "plot",
+        plot.caption = element_text(hjust = 0, face= "italic"),
+        plot.caption.position = "plot")
+
+mass_flipper
+
+```
+
+## Critiques and Proposed Changes
+
+### What is good about this image...
+
+This image does a very good job on several levels. The image uses colored shapes to identify specific penguin species. The shapes have a level of transparency as to not hide individual observations. Even though this isn't a statistical review, the image shows there is a global relationship between flipper length and body mass as well as a relationship within each species. 
+
+### What could be improved...
+
+There are two categorical variables which have not been employed: sex and island. It would be interesting to see if and how the relationship changes. Additionally, there are two additional fields not explored: culmen length and depth. The culmen is the upper ridge of the penguin's bill. There is a potential there might be an assoication between culmen measurements with flipper length and/or body mass. 
+
+### Proposed Changes
+
+The proposed changes will be looking at the numerical measurement fields and determine their relationship with each other. Additionally, these numerical measurements will be reviewed and analyzed by sex. 
+
+## New visuals
+
+For this visual, the `ggplot2` and `GGally` libraries will be used. `ggplot2` is well known, but `GGally` is less known. `GGally` expands on the `ggplot2` plotting capabilities. The reader is invited to read the [`GGally` documentation](https://cran.r-project.org/web/packages/GGally/GGally.pdf) for further information.
+
+The function from `GGally` that will be used is `ggpairs`. The `pairs` function is a well known function from basic R. The `ggpairs` function takes the base idea of `pairs` and applies the grammar of graphics. The output of `ggpairs` has the same look and feel with `pairs`, but with some additional information. `ggpairs` will return the correlation between each column and row intersection with an indicator if it is statistically significant or not. Additionally, when the row and column are the same field, the distribution of information is returned. 
+
+With this said, the first new visual is below. Some cleaning to shorten the penguin species name is performed as well.
+
+```{r pairs matrix, fig.align = "center", fig.width = 15, fig.height = 10}
+
+df <- df %>%
+  mutate(Species = ifelse(grepl(pattern = "Adelie", Species) == T, 
+                          "Adelie",
+                   ifelse(grepl(pattern = "Chinstrap", Species) == T,
+                          "Chinstrap", "Gentoo")))
+
+ggpairs(df, columns = 10:13, aes(color = Species)) +
+  ggtitle("Matrix Scatterplot of Penguin Data") +
+  theme_bw(base_size = 15)
+
+```
+
+To explain this chart, the first row will be used in example. In the [1,1] position of the matrix, the distributions for Culmen Length is shown for each species. Thiese distribution show Chinstaps and Gentoos have similar distributions compared to the Adelie species. In the [1,2], the correlation analyses of the [2,1] scatterplot. Overall, there is a negative correlation between Culmen Length and Depth. When each species is considered, the correlation flips. Additionally, the Chinstap's and Gentoo's correlation are nearly double the correlation seen in Adelie's. 
+
+There are some big takeaways from this chart. For instance, thre are two chances (Culmen Depth vs Culmen Length, Flipper Length vs Culmen Depth) where the global correlation is the opposite sign of each individual species. In these cases, the Gentoo species is distinctively different from the other two species. 
+
+The global association between Flipper Length and Body Mass is higher than each individual species. Although the Chinstrap and Gentoo species have relatively high correlations, the Adelie do not have an as strong correlation. This is a great example of why categorical variables should be considered when making a deep dive.
+
+## New Visual by Gender
+
+This visual can be expanded to the sex of the penguin. The code below shows this.
+
+```{r pairs matrix sex, fig.align = "center", fig.width = 15, fig.height = 10}
+
+df %>%
+  filter(Sex == "MALE") %>% 
+  ggpairs(columns = 10:13, aes(color = Species)) +
+  ggtitle("Matrix Scatterplot of Penguin Data - Males") +
+  theme_bw(base_size = 15)
+
+df %>%
+  filter(Sex == "FEMALE") %>% 
+  ggpairs(columns = 10:13, aes(color = Species)) +
+  ggtitle("Matrix Scatterplot of Penguin Data - Females") +
+  theme_bw(base_size = 15)
+
+```
+
+There are some really interesting findings when sex is considered. The first observation is the global correlation between combination is still significant. The second observation is that each sex only has one combination where all three species show significant correlation - Males: Flipper Length vs Body Mass and Females: Body Mass vs Culmen Depth. Not knowing the most about the penguins, these will not be explored at this point.
+
+## Still to be built out
+
+In reviewing the first matrix plot, there is a question which needs to be asked: Using these four fields, can the penguin species be appropriately predicted? This will require some learning and predictive methods. This will be not be done immediately but will be added later!
