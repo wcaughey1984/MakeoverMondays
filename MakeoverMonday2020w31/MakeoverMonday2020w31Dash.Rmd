@@ -1,0 +1,202 @@
+---
+title: "UK visits abroad: All visits Thousands - SA"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+This is my dashboard for this week's Makeover Monday. The purpose of this dash is to present additional views of UK visits abroad. The original data presented can be found [here](https://www.ons.gov.uk/peoplepopulationandcommunity/leisureandtourism/timeseries/gmax/ott). 
+
+The trend line for total visits (red line) shows a steady increase of visits over time. Interestingly enough is the percent change over time is actually decreasing. This is best seen on the 'By Year' tab. This could suggest the number of visits are plateauing. 
+
+```{r setup, include=FALSE, message = F, waring = F, comment = F}
+
+##### Libraries #####
+
+library(flexdashboard)
+library(tidyverse)
+library(httr)
+library(readxl)
+library(lubridate)
+library(ggpubr)
+library(scales)
+
+##### Bring in data #####
+
+url <- "https://query.data.world/s/igxj3pmxgtrtfum2lorsoedczkkcao"
+invisible(capture.output(GET(url, write_disk(tf <- tempfile(fileext = ".xls")))))
+df <- read_excel(tf) %>%
+    filter(grepl(pattern = "[0-9][0-9][0-9][0-9]\\s[A-Z][A-Z][A-Z]", 
+                 x = Title)) %>%
+    rowwise() %>%
+    mutate(year = paste0(str_split(string = Title, pattern = " ")[[1]][1]," Jan 01"),
+           month = paste0(Title, " 01"),
+           qtr = ifelse(grepl(pattern = "JAN|FEB|MAR", x = Title), 
+                        paste0(str_split(string = Title, pattern = " ")[[1]][1]," Mar 01"),
+                 ifelse(grepl(pattern = "APR|MAY|JUN", x = Title), 
+                        paste0(str_split(string = Title, pattern = " ")[[1]][1]," Jun 01"),
+                 ifelse(grepl(pattern = "JUL|AUG|SEP", x = Title), 
+                        paste0(str_split(string = Title, pattern = " ")[[1]][1]," Sep 01"),
+                        paste0(str_split(string = Title, pattern = " ")[[1]][1]," Dec 01"))))) %>%
+    ungroup() %>%
+    rename(uk_visits = `UK visits abroad: All visits Thousands - SA`) %>%
+    mutate(year = as.Date(year, format = "%Y %b %d"),
+           month = as.Date(month, format = "%Y %b %d"),
+           qtr = as.Date(qtr, format = "%Y %b %d"),
+           uk_visits = as.numeric(uk_visits)) %>%
+    select(year, month, qtr, uk_visits) %>%
+    filter(lubridate::year(year) != 2020)
+
+
+
+```
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### By Year
+
+```{r}
+
+by_year <- df %>%
+    group_by(year) %>%
+    summarize(visits = sum(uk_visits)) %>%
+    ungroup() %>%
+    ggplot(aes(x = year, y = visits)) +
+    geom_point(color = "red", size = 2) +
+    geom_line(color = "red", size = 1) +
+    geom_smooth(se = FALSE, method = "lm", color = "black") + 
+    labs(y = "Visits") +
+    scale_y_continuous(labels = comma) +
+    theme_classic() +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 12),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 12))
+          
+
+by_year_pct_chg <- df %>%
+    group_by(year) %>%
+    summarize(visits = sum(uk_visits)) %>%
+    ungroup() %>%
+    arrange(year) %>%
+    mutate(pct_change = (visits / lag(visits) - 1) * 100,
+           pct_change = ifelse(is.na(pct_change), 0, pct_change)) %>%
+    ggplot(aes(x = year, y = pct_change)) +
+    geom_point(color = "blue", size = 2) +
+    geom_line(color = "blue", size = 1) + 
+    geom_smooth(se = FALSE, method = "lm", color = "black") +
+    labs(y = "Percent Change",
+         x = "Year") +
+    theme_classic() + 
+    theme(axis.title.x = element_text(size = 14),
+          axis.text.x = element_text(size = 12),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 12))
+
+ggarrange(by_year, 
+          by_year_pct_chg, 
+          ncol = 1, 
+          align = "hv")
+
+```
+
+
+### By Quarter
+
+```{r}
+
+
+by_qtr <- df %>%
+    group_by(qtr) %>%
+    summarize(visits = sum(uk_visits)) %>%
+    ungroup() %>%
+    arrange(qtr) %>%
+    ggplot(aes(x = qtr, y = visits)) +
+    geom_point(color = "red", size = 2) +
+    geom_line(color = "red", size = 1) +
+    geom_smooth(se = FALSE, method = "lm", color = "black") + 
+    labs(y = "Visits") +
+    scale_y_continuous(labels = comma) +
+    theme_classic() +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 12),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 12))
+
+
+by_qtr_pct_chg <- df %>%
+    group_by(qtr) %>%
+    summarize(visits = sum(uk_visits)) %>%
+    ungroup() %>%
+    arrange(qtr) %>%
+    mutate(pct_change = (visits / lag(visits) - 1) * 100,
+           pct_change = ifelse(is.na(pct_change), 0, pct_change)) %>%
+    ggplot(aes(x = qtr, y = pct_change)) +
+    geom_point(color = "blue", size = 2) +
+    geom_line(color = "blue", size = 1) + 
+    geom_smooth(se = FALSE, method = "lm", color = "black") +
+    labs(y = "Percent Change",
+         x = "Quarter") +
+    theme_classic() + 
+    theme(axis.title.x = element_text(size = 14),
+          axis.text.x = element_text(size = 12),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 12))
+
+ggarrange(by_qtr, 
+          by_qtr_pct_chg, 
+          ncol = 1, 
+          align = "hv")
+
+```
+
+### By Month
+
+```{r}
+
+by_mth <- df %>%
+    group_by(month) %>%
+    summarize(visits = sum(uk_visits)) %>%
+    ungroup() %>%
+    arrange(month) %>%
+    ggplot(aes(x = month, y = visits)) +
+    geom_point(color = "red", size = 2) +
+    geom_line(color = "red", size = 1) +
+    geom_smooth(se = FALSE, method = "lm", color = "black") + 
+    labs(y = "Visits") +
+    scale_y_continuous(labels = comma) +
+    theme_classic() +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 12),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 12))
+
+
+by_mth_pct_chg <- df %>%
+    group_by(month) %>%
+    summarize(visits = sum(uk_visits)) %>%
+    ungroup() %>%
+    arrange(month) %>%
+    mutate(pct_change = (visits / lag(visits) - 1) * 100,
+           pct_change = ifelse(is.na(pct_change), 0, pct_change)) %>%
+    ggplot(aes(x = month, y = pct_change)) +
+    geom_point(color = "blue", size = 2) +
+    geom_line(color = "blue", size = 1) + 
+    geom_smooth(se = FALSE, method = "lm", color = "black") +
+    labs(y = "Percent Change",
+         x = "Month") +
+    theme_classic() + 
+    theme(axis.title.x = element_text(size = 14),
+          axis.text.x = element_text(size = 12),
+          axis.title.y = element_text(size = 14),
+          axis.text.y = element_text(size = 12))
+
+ggarrange(by_mth, 
+          by_mth_pct_chg, 
+          ncol = 1, 
+          align = "hv")
+
+```
+
