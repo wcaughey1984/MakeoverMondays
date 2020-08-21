@@ -85,6 +85,7 @@ strg_viz <- ggplot(df1,
                        y = `Percentage`)) +
   geom_bar(stat = "identity") +
   ggtitle("Struggles of Working at Home") +
+  ylim(c(0,32)) +
   theme_bw() +
   theme(legend.key = element_blank(),
            axis.title.x = element_blank(),
@@ -97,9 +98,11 @@ strg_viz <- ggplot(df1,
 ```
 
 
-### Chart A
+### Benefits vs Struggles
 
-```{r, echo = F}
+The benefits of working from home seem to have some powerful benefits. For instance, the ability to have a flexible schedule seems to be at the foremost of everyone's mind. What is interesting is the top three benefits and the top three struggles seem to be related. For starters, having a flexible schedule means the employee has the ability to jump on at any time. So, if for example, the employee is taking a trip, they can jump on at the end of their trip. This also lends itself to being able to work from anywhere without a commute! Alternatively, working from home can tax the ability to communicate with friends and colleagues at work. This definitely can lead to loneliness. Loneliness leads the individual to do anything at their disposal... which just can happen to be work. Thus, the three top benefits and struggles seem to balance each other out with percent of responses.
+
+```{r, echo = F, fig.width = 14}
 
 ggarrange(bene_viz, 
           strg_viz, 
