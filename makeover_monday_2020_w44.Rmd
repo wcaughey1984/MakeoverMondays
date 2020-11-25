@@ -1,0 +1,318 @@
+---
+title: "Makeover Monday 2020, Week 44"
+author: "Billy Caughey"
+date: "11/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, comment = FALSE)
+```
+
+## Purpose
+
+This document differs from the Makeover Monday social experiment. Instead of producing a dashboard, an analysis will be produced. The goal of this analysis is to practice various methods and processes from statitics and machine learning. Each week, a new data set is produced. The data will be reviewed and new tools will be used. The hope is new tools can be explored and tested. Any interesting results will be called out and highlighted.
+
+## TL;DR
+
+There is an inverse relationship with the number of internet users and the gender gaps found in internet access and mobile phone use. Using a hierararchal clustering with the "wade" metric, three clusters were identified. Cluster 1 showed the highest percentage of users and the smallest gender gaps in access and mobile phone use. Clusters 2 and 3 had lower percentage of users and higher gender gaps. The inverse association of users to gender gaps is shown in these clusters.
+
+Another result identified is the association between the gender gap in percent of internet access and mobile phone use. Before including clusters, there was an $R^2 = 0.5462$. This model showed if gender gap of mobile phone use increases by 1%, the gender gap in internet access will increase by 1.24%. After clustering and adding dummy variables for clusters led to an increase in $R^2$ of 0.743! Both dummy variables showed the increase in gender gap of internet access in comparison to cluster 1 (cluster 2 = 28%, cluster 3 = 6.9%). 
+
+The countries in cluster 1 are different when compared to cluster 2 and clsuter 3. It would be interesting to dig into these countries a little more.
+
+## Introduction
+
+This week's makeover comes from Viz5. The topic is the digital gender gap. The makeover for the week will be based on the visual below.
+
+```{r mm viz, fig.align = 'center', out.width = "75%", echo = FALSE, fig.cap = "Fig. 1: Makeover Monday -  2020W44 Viz", cache = TRUE}
+
+library(knitr)
+library(png)
+
+img1_path <- "mmw44.png"
+
+include_graphics(img1_path)
+
+```
+
+The goal of this analysis will be to determine which clustering metric is the best, optimal clusters, and then these clusters will be compared to each other. 
+
+## Preprocesing 
+
+The data for this analysis is being hosted by [data.world]("https://data.world/makeovermonday/2020w44"). As usual, the code for pulling the data into `R` was provided. In pulling the data down, countries were classified by regions of the world from the World Bank using the `countrycode` package. To prep for the cluster analysis, the three fields will be normalized using the `min-max` normalization method. This method scales fields to the [0,1] interval using the following function:
+
+\[
+minmax(x) = \frac{x - min(x)}{max(x) - min(x)} \in [0,1]
+\]
+
+Luckily, this function doesn't need to be built. Within the `scales` library is the `rescale` function. This function has an input called range with a default to `range = (0,1)`. This is exactly the normalization which is desired.
+
+```{r proprocessing}
+
+##### Setting Seed #####
+
+set.seed(1234)
+
+##### Libraries #####
+
+library(tidyverse)
+library(httr)
+library(readxl)
+library(visdat)
+library(countrycode)
+library(EnvStats)
+library(scales)
+library(cluster)
+library(class)
+library(NbClust)
+library(factoextra)
+library(caret)
+library(ggdendro)
+library(kableExtra)
+
+##### Bring in data #####
+
+url <- "https://query.data.world/s/3d3imd75a3lx44m7oafe5v7ivjjj7t"
+#invisible(capture.output(GET(url, write_disk(tf <- tempfile(fileext = ".xlsx")))))
+#df <- read_excel(tf)
+
+mm_get <- function(data_url){
+    
+    invisible(capture.output(GET(data_url, write_disk(tf <- tempfile(fileext = ".xlsx")))))
+    df <- read_excel(tf)
+    
+}
+
+mm_w44 <- mm_get(data_url = url) %>%
+    mutate(`Region` = countrycode(sourcevar = Country, 
+                                  origin = "country.name", 
+                                  destination = "region"),
+           `Internet users; % of households - Scaled` = rescale(`Internet users; % of households`),
+           `Gender gap in internet access; % difference - Scaled` = rescale(`Gender gap in internet access; % difference`),
+           `Gender gap in mobile phone access; % difference - Scaled` = rescale(`Gender gap in mobile phone access; % difference`)) 
+
+```
+
+## Visualization
+
+Before any clustering method can be used, it is important to explore the data. Three visuals will be produced:
+
+1. `Internet users; % of household` vs `Gender gap in internet access; % difference`
+2. `Internet users; % of household` vs `Gender gap in mobile phone access; % difference`
+3. `Gender gap in internet access; % difference` vs `Gender gap in mobile phone access; % difference`
+
+These visuals will let us explore the interactions of these variables and if anything should be investigated further.
+
+### Internet users vs Gender gap in internet access
+
+```{r plot1, fig.align = 'center', fig.width = 16, fig.height = 10}
+
+mm_w44 %>%
+    ggplot(aes(x = `Internet users; % of households`, 
+               y = `Gender gap in internet access; % difference`, 
+               color = `Region`)) + 
+    geom_point(size = 4, alpha = 0.65) +
+    scale_x_continuous(labels = percent) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("Gender Gap, Internet Users vs Internet Access") + 
+    theme_bw() + 
+    theme(plot.title = element_text(size = 24),
+          axis.title.x = element_text(size = 20),
+          axis.title.y = element_text(size = 20),
+          axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(size = 16),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 12))
+
+```
+
+Immediately there seems to be some sort of clustering in the data. The cluster on the right has countries which have higher % of household internet users and less of a gender gap in internet access. The cluster, or clusters, on the left have less households with internet users and much greater disparity in gender gap in internet access. What is not known is if there are multiple clusters on the right or left. Currently, there are two emerging.
+
+What needs to be stated here is the construction of the `Gender gap in internect access; % difference` field. According to the data dictionary, this field has the following calculation:
+
+\[
+Gender gap in internect access = \frac{\%males - \%females}{\%males}
+\]
+
+When there is a low number of internet users, it seems the men are getting internet access as compared to the females. Whether this is a cultural thing or lack of resources, it seems low internet users favors the men, as compared to women, in getting the internet access.
+
+### Internet users vs Mobile phone access
+
+```{r plot2, fig.align = 'center', fig.width = 16, fig.height = 10}
+
+mm_w44 %>%
+    ggplot(aes(x = `Internet users; % of households`, 
+               y = `Gender gap in mobile phone access; % difference`, 
+               color = `Region`)) + 
+    geom_point(size = 4, alpha = 0.65) +
+    scale_x_continuous(labels = percent) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("Gender Gap, Internet Users vs Mobile Phone Access") + 
+    theme_bw() + 
+    theme(plot.title = element_text(size = 24),
+          axis.title.x = element_text(size = 20),
+          axis.title.y = element_text(size = 20),
+          axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(size = 16),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 12))
+
+```
+
+Similar to the previous post, there seems to be at least two clusters emerging. The clusters align with the previous plot. The cluster on the right shows countries who have a large number of internet uses have a smaller gap in mobile phone access. The cluster on the left shows the alternative story: countries who have a small number of internet users and more disparity in the gap of mobile phone access. The two clusters in this plot are a little harder to identify compared to the first plot. 
+
+What is interesting in this plot is the ranges of mobile phone access are fairly close. The 'average' of the clusters do appear to be different. The cluster on the right seem to be weighted at 0 or just a bit above 0. The cluster on the left seems to be weighted around 15%. That is still significant that the two clusters have similar ranges but different averages.
+
+### Internet Access vs Mobile Phone Access 
+
+```{r plot3, fig.align = 'center', fig.width = 16, fig.height = 10}
+
+mm_w44 %>%
+    ggplot(aes(x = `Gender gap in mobile phone access; % difference`, 
+               y = `Gender gap in internet access; % difference`, 
+               color = `Region`,
+               group = 1)) + 
+    geom_point(size = 4, alpha = 0.65) +
+    geom_smooth(method = "lm", se = F) +
+    scale_x_continuous(labels = percent) +
+    scale_y_continuous(labels = percent) +
+    ggtitle("Gender Gap, Mobile Phone Access vs Internet Access") +
+    theme_bw() + 
+    theme(plot.title = element_text(size = 24),
+          axis.title.x = element_text(size = 20),
+          axis.title.y = element_text(size = 20),
+          axis.text.x = element_text(size = 16),
+          axis.text.y = element_text(size = 16),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 12))
+
+```
+
+This plot doesn't reveal any clusters, but it informs something different. There is a _CLEAR TREND_ that a lower gap in mobile phone access means a lower gender gap in internet access. In recent years it is a known trend technology is becoming more mobile. The days of accessing information by books or sitting down at a computer to collect information are becoming the past. The present and future increasingly point to the fact mobile technology is how information will be collected (or learned), consumed, and shared. 
+
+Before moving on, this trend needs to be evaluated. With the linear trend observed, a OLS will be used to build this model.
+
+```{r mod1}
+
+mod1 <- lm(`Internet Access` ~ `Mobile Phone Access`,
+           data = mm_w44 %>% 
+                    rename(`Mobile Phone Access` = `Gender gap in mobile phone access; % difference`,
+                           `Internet Access` = `Gender gap in internet access; % difference`))
+
+summary(mod1)
+
+```
+
+The model has an $R^2 = 0.5462$. This isn't the best $R^2$, but it isn't the worst either. With that backdrop, if the gender gap of mobile phone access increases by 1% (0.01), then the gender gap in internet access increases by 1.24%. This is not a good outcome! There will be more to come on this regression later.
+
+## Clustering 
+
+The analysis has reached the point where the clustering can begin. Earlier in the analysis, the inputs were normalized using the Min-Max method. This was done to remove units (percentage vs percent difference) of the fields. This will make clustering much easier and straight forward. The first step of clustering is determining which clustering method is best. There are four metrics considered in this analysis: `average`, `single`, `complete`, and `ward`. The reader is encouraged to review these metrics as they will not be reviewed here.
+
+The `agnes` function will be used for clustering. One of the prime benefits of using `agnes` is the aggrogration coefficient (ac) returned. The ac will let us know, generally, the best metric to use. The function `best_metric` is a user built function to roll over the metrics and collect their ac's.
+
+```{r best ac}
+
+clust_mm_w44 <- mm_w44 %>%
+    select(`Country`, 
+           `Internet users; % of households - Scaled`, 
+           `Gender gap in internet access; % difference - Scaled`,
+           `Gender gap in mobile phone access; % difference - Scaled`) %>%
+    column_to_rownames(var = "Country")
+
+best_cluster <- function(data_set, metrics){
+    
+    metric_name <- as.character(NULL)
+    agg_coef <- as.numeric(NULL)
+    
+    for(i in 1:length(metrics)){
+        
+        clust1 <- agnes(data_set, method = metrics[i])
+        metric_name <- c(metric_name, metrics[i])
+        agg_coef <- c(agg_coef, clust1$ac)
+        
+    }
+    
+    list(Metric_name = metric_name,
+         Agg_Coefficients = agg_coef)
+    
+}
+
+best_cluster(data_set = clust_mm_w44, metrics = c( "average", "single", "complete", "ward"))
+
+```
+
+The `ward` metric looks like it will be the best metric to use. From here forward, the aggrogration metric will be made off the `ward` metric.
+
+The second step is to determine the optimal number of clusters to be used. The method used to determine the optimal number of clusters is the so-called "Elbow" method. This method shows the sum of squares versus the number of clusters. The smaller the summ of squares, the better; however, there is a point of diminishing returns. At a point, known as the elbow, moving on to a great number of clusters really doesn't improve the sum of squares. Thus, when that elbow is identified, the optimal number of clusters is then used.
+
+The function used is the `fviz_nbclust` function from the `factoextra` library. There are three inputs: the data, the style of clustering, and the method. Since our clustering will be hierarchical clustering, the "hcut" option is indentified.
+
+```{r elbow method, fig.align = 'center', fig.width = 16, fig.height = 10}
+
+fviz_nbclust(clust_mm_w44, FUN = hcut, method = "wss")
+
+```
+
+There are two potential optimal number of clusters: 2 and 3. For this analysis, 3 will be called the optimal number and here is why. The sum of squares is small at 2 and 3; however, the drop from 2 to 3 is still pretty substantial. The drop from 3 to 4 is basically negliable. This means 3 where we can get the most information gain BEFORE experiencing diminishing returns. 
+
+At this point, it's appropriate to cluster. A dendogram will be used to showcase the clusters. Each cluster will be identified by a different colored box around the countries which form the cluster.
+
+```{r clustering, fig.align = 'center', fig.width = 16, fig.height = 10}
+
+hc3 <- agnes(clust_mm_w44, method = "ward")
+pltree(hc3, cex = 0.9, hang = -1, main = "Dendrogram of Digital Gender Gaps", ylab = NULL, xlab = NULL)
+rect.hclust(hc3, k = 3, border = c("dark green", "red", "blue"))
+
+```
+
+With the clusters established, it apporpriate now to take some summary statistics with the original data. The goal is to get summary statistics from each cluster and form a dialogue.
+
+```{r descriptive statistics}
+
+mm_w44 <- mm_w44 %>%
+    mutate(cluster = cutree(hc3, k = 3))
+
+mm_w44 %>%
+    group_by(cluster) %>% 
+    summarize(`Internet Users - Mean` = mean(`Internet users; % of households`),
+              `Internet Users - SD` = sd(`Internet users; % of households`),
+              `Internet Access - Mean` = mean(`Gender gap in internet access; % difference`),
+              `Internet Access - SD` = sd(`Gender gap in internet access; % difference`),
+              `Mobile Phone Access - Mean` = mean(`Gender gap in mobile phone access; % difference`),
+              `Mobile Phone Access - SD` = sd(`Gender gap in mobile phone access; % difference`)) %>%
+    kbl() %>%
+    kable_styling()
+
+```
+
+Based on the summary statistics, cluster 1 has the highest percent of internet users, and lowest gender gaps in internet and mobile phone access. Cluster 2 and 3 seem to be closer together in terms of users, access, and mobile phones. What holds true across all the clusters is when there are more internet users, the access and mobile device gender gap trends toward 0. The alternative of a lower percent of internet users points to higher gender gaps in internet and mobile phone access. 
+
+## Revisiting the linear regression 
+
+In comparing the gender gap in internet access and mobile phone access a linear association was detected. With the clusters formed and identified they can be submitted to the model. Dummy fields will be created to identify cluster 2 and 3. The coefficients to these fields will show the increase in gender gaps, on average, between the cluster and cluster 1.
+
+```{r linear model 2}
+
+mod2 <- lm(`Internet Access` ~ `Mobile Phone Access` + c2 + c3,
+           data = mm_w44 %>%
+                       mutate(c1 = ifelse(cluster == 1, 1, 0),
+                              c2 = ifelse(cluster == 2, 1, 0),
+                              c3 = ifelse(cluster == 3, 1, 0)) %>% 
+                       rename(`Mobile Phone Access` = `Gender gap in mobile phone access; % difference`,
+                                   `Internet Access` = `Gender gap in internet access; % difference`)
+               )
+
+summary(mod2)
+
+```
+
+So, what do the coefficients of c2 (cluster 2) and c3 (cluster 3) mean? If a country falls into cluster 1, the gender gap, on average, is 28% greater than countries in cluster 1. Similarly, if a country falls into cluster 3, the gender gap, on average, is 6.9% greater than cluster 1. What makes this model so exciting? The adjsuted $R^2$ is 0.743! That's a huge increase! That would suggest this model is BETTER than the previous linear regression. This result continues to show the countries in cluster 1 are doing something right in comparison to countries in cluster 2 and 3.
+
+## Conclusion
+
+Three clusters of countries were found in the data. Cluster 1 showed higher rates of internet users and lower gender gaps in internet access and mobile device access. Clusters 2 and 3 have lower rates of internet users and higher gender gaps in internet access and mobile device access. These relationships were observed via summary statistics.
+
+The relationship between the gender gap of internet access and mobile device access was investigated. It was shown an increase in the gender gap of mobile device access increased the gender gap of internet access. Further investigation showed cluster 2 and cluster 3, on average, have higher gender gaps of internet access comapred to clsuter 1. 
+

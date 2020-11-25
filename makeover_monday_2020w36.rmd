@@ -1,0 +1,154 @@
+---
+title: "Makeover Monday 2020w36"
+subtitle: "80 Cereals - Kaggle"
+author: "Billy Caughey"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## TL;DR 
+
+(Fill this out)
+
+## Introduction 
+
+This week's Makeover Monday will be a bit different this week. Instead of a dashboard submission, a traditional analysis report will be submitted. The focus of this week is around Kaggle's data set [80 Cereals](https://www.kaggle.com/crawford/80-cereals?select=cereal.csv) based on the article ["Breakfast Cereals: Healthy or Unhealthy?"](https://www.healthline.com/nutrition/are-breakfast-cereals-healthy). There are two goals to this submission. First, develop a model to detect if a cereal is 'hot' or 'cold'. There are several methods that can be used here: logistic regression, linear descriminate analysis, and random forests to name a few. Additionally, the hope is to 'bag' these methods. Bagging will be discussed later. Second, present a walk through on how to perform a cluster anlaysis. This will include discussion methods, libraries, and functions used in this markdown.
+
+## Preprocessing 
+
+This step of the data analytics pathway is all about importing and cleaning the data. Both steps of importing and cleaning can present issues. Importing data requires understanding where the data is stored and how to get it into R. Cleaning requires a quick exploration and making corrections based on logic rules.
+
+### Importing data
+
+The data for this project is stored on [data.world](https://data.world/makeovermonday/2020w36). To bring in the data, the `httr` and `readxl` libraries will be used. The `httr` library is used in working with URLs and HTTP. The `readxl` library will be used to import the downloaded excel sheet into R. The first row of the excel sheet will be 'skipped' so the row names can be detected by R upon import.
+
+```{r download R}
+
+library(httr)
+library(readxl)
+
+invisible(capture.output(GET("https://query.data.world/s/sxpiyi2oqau6qbc54fnwkov5xuzcr4", write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf, col_names = TRUE, skip = 1)
+
+str(df)
+
+```
+
+The sample size is not large by any extent. In fact, if the traditional 70/30 rule was used, the training set would have 56 cereals, and the testing set would have 14 cereals. This is not thrilling. Instead, a method called 'k-fold cross-validation' will be used. k-fold cross-validation is used in small samples when sufficiently large training and testing sets cannot be created. This method works in the following way:
+
+- Step 1: Set aside the first k-observations as the test set
+- Step 2: Train the model on the remaining N-k observations
+- Step 3: Test the model with the first k-observations
+- Step 4: Determine the model's effectiveness in predicting the first k-observations
+- Step 5: Repeat this process k-1 times.
+- Step 6: Aggregate the results to determine the overall effectiveness of the model.
+
+### Data Cleaning
+
+There are two very quick methods to determine what cleaning efforts need to be taken. First, the `missmap` function from the `Amelia` function. The result, known as a Missingness Map, will show where missing values exist and give a sense of the frequency. If there are missing values, logic rules will need to be applied to address these missing values.
+
+```{r missmap}
+
+library(Amelia)
+
+missmap(df)
+
+```
+
+The resulting Missingness Map shows there are no missing values. In practice, this may not always be the case. Large efforts will often be applied to correct missing values when necessary.
+
+The second method is to use the `summary` function. The results of this function are the mean and 5-number summary of each numeric field. Outliers can be seen very easily using this method.
+
+```{r basic summary}
+
+summary(df)
+
+```
+
+One of the first observations is the value of -1 in __grams of sugar__, __grams of complex carbohydrates__ and, __milligrams of potassium__. This does not make sense any sense to have a value of -1 for any of these values! The cereals which report -1 in these fields are:
+
+```{r reporting -1}
+
+library(tidyverse)
+
+df %>%
+    filter(`grams of sugars` == -1 | `milligrams of potassium` == -1 | `grams of complex carbohydrates` == -1) %>%
+    select(name, `grams of sugars`, `milligrams of potassium`, `grams of complex carbohydrates`)
+
+```
+
+It appears the -1 value points to a _missing_ entry. A quick Google search can be used to find out what these values actually should be. This highlights an important point. Always take a few minutes to do some digging to determine what the truth is. The previous code to print out the names of cereals with a '-1' will be used to determine if the problem was corrected.
+
+```{r correcting -1}
+
+df <- df %>%
+    mutate(`milligrams of potassium` = ifelse(name == "Almond Delight", 155, ifelse(name == "Cream of Wheat (Quick)", 0, `milligrams of potassium`)),
+           `grams of sugars` = ifelse(name == "Quaker Oatmeal", 0, `grams of sugars`),
+           `grams of complex carbohydrates` = ifelse(name == "Quaker Oatmeal", 22, `grams of complex carbohydrates`))
+
+df %>%
+    filter(`grams of sugars` == -1 | `milligrams of potassium` == -1 | `grams of complex carbohydrates` == -1) %>%
+    select(name, `grams of sugars`, `milligrams of potassium`, `grams of complex carbohydrates`)
+
+```
+
+## Exploratory Data Analysis (EDA)
+
+Before developing a model, it is wise to explore the data. Descriptive and visual methods will be used to explore the data. Insights from this exploration will drive hypothesis testing, variable inclusion, and potential models which can be used. Additionally, there is a touch of crossover between EDA and data cleaning. Before a model is coded, data should be scaled and centered (known as standardizing). The purpose for this is to remove units and standardize data. Classification models often work better when data is standardized as well. It should be noted at this point that forest models are 'immune' to outliers. The data will still be standardized to maintain consistency across models.
+
+Exploring the data will require the use of the Tidyverse using the `tidyverse` library. This library contains tools for importing, cleaning, and visualizing data. When an R user imports the `tidyverse`, a myriad of libraries are imported. These libraries include, but not limited to `tidyR`, `dplyr`, and `ggplot2`. 
+
+### Reviewing Outcome Variable: type
+
+Let's take a moment and see how many of each type of cereal the data contains. If 'type' of cereal is an extreme event, the crossvalidation method used later will need to be adjusted to address to this. 
+
+```{r viewing type}
+
+round(prop.table(table(df$type)) * 100, 3)
+
+```
+
+Two immediate thoughts come from this result. First, there is no surprise coming from this result. The cereal aisle at the local grocery store will reflect this result. Second, the outcome of 'hot' cereal is definitely a rare event. Rare events cause a host of issues because classification models make the assumption outcome classes are balances. There are several methods can address rare events. Since sampling will be handled by cross-validation, a method like gradient boosting can be used (discussed later).
+
+### Reviewing Input Variables 
+
+At this point, the input variables are going to be reviewed to see what their distributions are. The hope is the variables are Normal so a simple scale and center approach can be used. In the case distributions are not Normal a Box-Cox transformation can be used. This transformation will (hopefully) shift distributions to a more Normal distribution.
+
+After review, the only variable which needs a transformation is `grams of dietary fiber`. This variable has an exponential density. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

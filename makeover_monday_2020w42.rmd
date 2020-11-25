@@ -1,0 +1,101 @@
+---
+title: 'Makeover Monday - 2020W42'
+subtitle: 'Healthcare Spending'
+author: "Billy Caughey"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = F, warning = F, message = F)
+
+```
+
+## Introduction
+
+This weeks **Makeover Monday** is based on Healthcare Spending. This topic is a polarizing topic world-wide and is particularly polarizing in the United States. The visual for this week is below. 
+
+```{r mm viz, fig.align = 'center', out.width = "75%", echo = FALSE, fig.cap = "Fig. 1: Makeover Monday -  2020W42 Viz", cache = TRUE}
+
+library(knitr)
+library(png)
+
+img1_path <- "mm 2020w42 viz.png"
+
+include_graphics(img1_path)
+
+```
+
+Like always, there are two main questions asked:
+
+- What works and what doesn't work with this chart?
+- How can you make it better?
+
+### What works?
+
+This visual definitely shows the different between countries. The simple use of colors and symbols is very much appreciated. The comparisons between countries is really appreciated.
+
+### What doesn't work?
+
+Without knowing the exact population of each country, it is really difficult to see if the countries total is really that bad. For instance, the countries of Italy and Malta have similar spends. What isn't known is how what is the cost per capita? The cost per capita would present a better view.
+
+Another view which needs to be presented is the cost per country and the overall health of each country. If a country spends more than other countries, theorectically, the country which spends more *should* have better health outcomes. 
+
+These two views will be presented along with the original view.
+
+## Preprocessing
+
+### Import data
+
+The data for this analysis is housed by [data.world](https://data.world/makeovermonday/2020w42). The simple script below can import the data. 
+
+For simplicity sake of this analysis, countries with a 'total', 'govenment/compulsory', and 'voluntary' value in 2019 will be kept in this analysis. This will make collecting population values and health outcomes more doable. 
+
+```{r}
+
+library(tidyverse)
+
+df <- read_csv(file = "https://query.data.world/s/blcux4jkz3n6qywf4zypxxddqqtzrl", 
+               col_names = c("location", "indicator", "subject", "measure", 
+                             "frequency", "time", "value", "flag_codes"),
+               col_types = "ccccccdc") %>%
+    filter(time == "2019",
+           measure == "USD_CAP") 
+
+```
+
+Now, a simple effort will be taken to determine if any of the values are missing. There are easy ways to do this, but the **Amelia** package has a `missmap` function which shows if there are missing values. If there are missing values in the *value* field, that country it's associated with will be dropped from the analysis.
+
+```{r}
+
+library(Amelia)
+
+missmap(df)
+
+```
+
+The `missmap` visual showed there are few *flag_codes* missing, but that's not a field of concern at this moment. This result suggests the countries in the analysis are eligible to continue forward.
+
+### Adding Population
+
+```{r} 
+
+table(df$location)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

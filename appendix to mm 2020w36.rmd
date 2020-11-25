@@ -1,0 +1,150 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+#### Calories Per Serving
+
+```{r calories per serving}
+
+df %>%
+    ggplot(aes(x = `calories per serving`)) +
+    geom_density() 
+
+```
+
+#### Grams of Protein 
+
+```{r grams of protein}
+
+df %>%
+    ggplot(aes(x = `grams of protein`)) +
+    geom_density() 
+    
+```
+
+#### Milligrams of Sodium 
+
+```{r milligrams of sodium}
+
+df %>%
+    ggplot(aes(x = `milligrams of sodium`)) +
+    geom_density() 
+    
+```
+
+#### Grams of Dietary Fiber <- This one
+
+```{r grams of dietary fiber}
+
+df %>%
+    ggplot(aes(x = `grams of dietary fiber`)) +
+    geom_density() 
+    
+```
+
+#### Grams of Complex Carbohydrates 
+
+```{r grams of Complex Carbohydrates}
+
+df %>%
+    ggplot(aes(x = `grams of complex carbohydrates`)) +
+    geom_density() 
+    
+```
+
+#### Grams of Sugars
+
+```{r grams of sugars}
+
+df %>%
+    ggplot(aes(x = `grams of sugars`)) +
+    geom_density() 
+    
+```
+
+#### Milligrams of Potassium
+
+```{r milligrams of potassium}
+
+df %>%
+    ggplot(aes(x = `milligrams of potassium`)) +
+    geom_density() 
+    
+```
+
+#### vitamins and minerals (% of FDA recommendation)
+
+```{r vitamins and minerals (% of FDA recommendation)}
+
+df %>%
+    ggplot(aes(x = `vitamins and minerals (% of FDA recommendation)`)) +
+    geom_density() 
+    
+```
+
+#### Weight in ounces per one serving
+
+```{r Weight in ounces per one serving}
+
+df %>%
+    ggplot(aes(x = `Weight in ounces per one serving`)) +
+    geom_density() 
+
+df %>%
+    ggplot(aes(x = `Weight in ounces per one serving`)) +
+    geom_density() +
+    facet_wrap(. ~ type)
+    
+```
+
+#### Display shelf
+
+```{r Display shelf}
+
+df %>%
+    ggplot(aes(x = `Display shelf`)) +
+    geom_bar()
+
+df %>%
+    ggplot(aes(x = `Display shelf`)) +
+    geom_bar() +
+    facet_wrap(. ~ type)
+    
+```
+
+#### Number of cups in one serving
+
+```{r Number of cups in one serving}
+
+df %>%
+    ggplot(aes(x = `Number of cups in one serving`)) +
+    geom_density() 
+
+    
+```
+
+#### Rating of cereal
+
+```{r Rating of cereal}
+
+df %>%
+    ggplot(aes(x = `Rating of cereal`)) +
+    geom_density() 
+
+    
+```
