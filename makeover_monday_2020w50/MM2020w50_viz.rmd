@@ -1,0 +1,131 @@
+---
+title: "Makeover Monday 2020 - Week 50"
+author: "Billy Caughey"
+date: "12/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, comments = FALSE, warning = FALSE, message = FALSE)
+
+##### Libraries #####
+
+library(tidyverse)
+
+##### Set working directory #####
+
+setwd("C:/Users/Owner/Documents/GitHub/MakeoverMondays/makeover_monday_2020w50")
+
+##### Functions #####
+
+## cat elements
+cat_elements <- function(x){
+    
+    y <- NULL
+    
+    if(x %in% c("Lakes", "Dock", "Boat", "Ocean", "Waterfall", "River", "Lake", "Beach", 
+                "Waves")){
+        y <- "Oceans, Lakes, and Rivers"
+    } else if(x %in% c("Building", "Farm", "Lighthouse", "Windmill", "Mill", "Bridge", 
+                       "Barn", "Fence", "Cabin", "Structure")){
+        y <- "Farms and Structures"
+    } else if(x %in% c("Diane Andre", "Person", "Steve Ross", "Guest")){
+        y <- "Guest"
+    } else if(x %in% c("Apple Frame", "Double Oval Frame", "Florida Frame", 
+                       "Half Circle Frame", "Half Oval Frame", "Rectangular 3D Frame", 
+                       "Rectangular frame", "Seashell Frame", "Split Frame", "Tomb Frame", 
+                       "Triple Frame", "Window Frame", "Wood Frame", "Circle Frame", 
+                       "Portrait", "Oval Frame", "Framed", "Rectangle 3D Frame", 
+                       "Rectangular Frame", "Wood Framed")){
+        y <- "Painting Frame"
+    } else if(x %in% c("Aurora Borealis", "Moon", "Night", "FOG", "SUN", "Winter", "Snow", 
+                       "Cumulus", "Clouds", "Fire", "Cirrus")){
+        y <- "Weather and Clouds"
+    } else if(x %in% c("Cactus", "Flowers", "Bushes", "Grass")){
+        y <- "Flowers and Bushes"
+    } else if(x %in% c("Cliff", "Hills", "Path", "Rocks", "Mountains", "Snowy Mountain", 
+                       "Mountain")){
+        y <- "Mountains and Hills"
+    } else if(x %in% c("Palm Trees", "Conifer", "Deciduous", "Trees", "Tree")){
+        y <- "Trees"
+    } else {
+        y <- "MISSING"
+    }
+    
+    y
+    
+}
+
+
+##### Bring in the data #####
+
+df <- read.csv("elements-by-episode.csv", 
+               header=TRUE, 
+               stringsAsFactors=FALSE) %>%
+    mutate(season = as.numeric(substr(Episode, 2, 3)),
+           episode = as.numeric(substr(Episode, 5, 6)),
+           cat_elements = sapply(X = Element, FUN = cat_elements),
+           cat_incident = (Included > 0))
+
+
+
+```
+
+## Summary 
+
+This week's makeover is on the artist, Bob Ross. The show "The Joy of Painting" featured Bob Ross's paintings from 1983-1994. Bob's friendly and calming comments of "friendly cloud", "almighty mountain", and "happy trees" continue to bring smiles to those who watched his show and the reruns.
+
+There were 31 seasons of "The Joy of Painting" with 13 episodes per season. [Key words](https://fivethirtyeight.com/features/a-statistical-analysis-of-the-work-of-bob-ross/) were gathered by the author to describe each painting. The keywords collected were further categorized into 8 categories (7 and 8 were excluded):
+
+1. Farms and Structures
+2. Flowers and Bushes
+3. Mountains and Hills
+4. Oceans, Lakes, and Rivers
+5. Trees
+6. Weather and Clouds
+7. Guests
+8. Painting Frame
+
+Using this categorization, the following visual was produced showing the number of paintings, by season, which fell into each category. It is possible for a painting to fall into multiple categories.
+
+```{r, fig.width = 16, fig.height = 10}
+
+df %>%
+    group_by(season, episode, cat_elements) %>%
+    summarize(incident = max(cat_incident)) %>%
+    ungroup() %>%
+    group_by(season, cat_elements) %>%
+    summarize(paintings = sum(incident)) %>%
+    ungroup() %>%
+    arrange(season, paintings) %>%
+    filter(!(cat_elements %in% c("Guest", "Painting Frame"))) %>%
+    ggplot(aes(x = season, y = paintings)) +
+    geom_line(size = 1) +
+    geom_point(size = 2) +
+    ylim(c(0,13)) +
+    ylab("Paintings") +
+    xlab("Seasons") +
+    theme_bw() +
+    facet_wrap(~ cat_elements) +
+    theme(axis.title.x = element_text(size = 20),
+          axis.text.x = element_text(size = 16),
+          axis.title.y = element_text(size = 20),
+          axis.text.y = element_text(size = 16),
+          strip.text = element_text(size = 18)) 
+
+
+```
+
+This visual shows a lot of key insights. First, the time Bob Ross spent in Alaska shines through in the amount of paintings had "Trees" in them. Additionally. the number of paintings which had "Mountain and Hills" or "Oceans, Lakes, and Rivers" had a high prevalence as well. At the very least, Bob Ross enjoyed the treed mountains with some water element around.
+
+Less prevalent were "Farms and Structures". This should not be super surprising. Alaska is not known for their farm land given the short growing season. 
+
+What was interesting was the variability of "Flowers and Bushes" and "Weather and Clouds". On average, the majority of paintings had some reference to these groups; however, they still showed a great deal of variability. It really did seem the clear skies and trees showed up more than these two categories.
+
+## References
+
+[Original View](): Analysis on Bob Ross's paintings to discuss various introductory probability statements.
+
+[Code](): Before each markdown, an exploratory data analysis is performed. This is done for several reasons. Of most noteworthy is if a formal analysis should be performed. If there is evidence a new viz can be produced with a statistical/machine learning analysis, it will be done.
+
+[rmarkdown](): The mardown file to produce this markdown. Most of time, I try to use the `flexdashboard` library, but a markdown served better in this instance.
