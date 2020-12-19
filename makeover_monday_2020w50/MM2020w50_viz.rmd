@@ -124,8 +124,8 @@ What was interesting was the variability of "Flowers and Bushes" and "Weather an
 
 ## References
 
-[Original View](): Analysis on Bob Ross's paintings to discuss various introductory probability statements.
+[Original View](https://fivethirtyeight.com/features/a-statistical-analysis-of-the-work-of-bob-ross/): Analysis on Bob Ross's paintings to discuss various introductory probability statements. The bar chart titled "The Paintings of Bob Ross" specifically.
 
-[Code](): Before each markdown, an exploratory data analysis is performed. This is done for several reasons. Of most noteworthy is if a formal analysis should be performed. If there is evidence a new viz can be produced with a statistical/machine learning analysis, it will be done.
+[Code](https://github.com/wcaughey1984/MakeoverMondays/blob/master/makeover_monday_2020w50/MM2020w50.R): Before each markdown, an exploratory data analysis is performed. This is done for several reasons. Of most noteworthy is if a formal analysis should be performed. If there is evidence a new viz can be produced with a statistical/machine learning analysis, it will be done.
 
-[rmarkdown](): The mardown file to produce this markdown. Most of time, I try to use the `flexdashboard` library, but a markdown served better in this instance.
+[rmarkdown](https://github.com/wcaughey1984/MakeoverMondays/blob/master/makeover_monday_2020w50/MM2020w50_viz.rmd): The mardown file to produce this markdown. Most of time, I try to use the `flexdashboard` library, but a markdown served better in this instance.
