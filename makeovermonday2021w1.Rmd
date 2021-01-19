@@ -1,0 +1,116 @@
+---
+title: "Trial Counts, 2019-2020"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+At a very high level, the trail counters show there were more folks on the trails in 2020 compared to 2019. This is mostly due to COVID shutting down other common conveniences. The number of bike sales in 2020 far surpassed that of 2019. Combining this with the definite change in trend in pedestrians, it suggests there are more people biking on the trails. It also suggests poeple are spending more time biking rather than taking other forms of transportation.
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+
+##### Libraries #####
+library(httr)
+library(readxl)
+library(tidyverse)
+library(lubridate)
+
+##### Pull data in #####
+url <- "https://query.data.world/s/nedy2zrrvisyaev42qe4hputjvgyou" 
+invisible(
+    capture.output(
+        GET(url, write_disk(tf <- tempfile(fileext = ".xlsx")))
+    )
+)
+
+df <- read_excel(tf) %>%
+    mutate(Week = as_date(Week),
+           Week_Num = as.numeric(gsub(pattern = "Week ", 
+                                      replacement = "",
+                                      x = Timeframe)))
+
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Trail Counters
+
+```{r}
+
+plot1 <- df %>%
+    ggplot(aes(x = Week_Num, 
+               y = `Counts (31 counters)`,
+               color = factor(Year))) +
+    geom_line(size = 2, alpha = 0.65) +
+    theme_bw() +
+    labs(y = "Trail Counters",
+         x = "Week Number",
+         title = "Trail Counters vs Weeks\n2019-2020") +
+    theme(axis.title.x = element_text(size = 20),
+          axis.text.x = element_text(size = 16),
+          axis.title.y = element_text(size = 20),
+          axis.text.y = element_text(size = 16),
+          plot.title = element_text(size = 24),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 16))
+
+plot1
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Bikes
+
+```{r}
+
+plot2 <- df %>%
+    ggplot(aes(x = Week_Num, 
+               y = `Bikes (14 counters)`,
+               color = factor(Year))) +
+    geom_line(size = 2, alpha = 0.65) +
+    theme_bw() +
+    labs(y = "Bikes",
+         x = "Week Number",
+         title = "Bikes vs Weeks\n019-2020") +
+    theme(axis.title.x = element_text(size = 20),
+          axis.text.x = element_text(size = 16),
+          axis.title.y = element_text(size = 20),
+          axis.text.y = element_text(size = 16),
+          plot.title = element_text(size = 24),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 16))
+
+plot2
+
+```
+
+### Pedestrians
+
+```{r}
+
+plot3 <- df %>%
+    ggplot(aes(x = Week_Num, 
+               y = `Pedestrians (14 counters)`,
+               color = factor(Year))) +
+    geom_line(size = 2, alpha = 0.65) +
+    theme_bw() +
+    labs(y = "Pedestrians",
+         x = "Week Number",
+         title = "Pedestrians vs Weeks\n2019-2020") +
+    theme(axis.title.x = element_text(size = 20),
+          axis.text.x = element_text(size = 16),
+          axis.title.y = element_text(size = 20),
+          axis.text.y = element_text(size = 16),
+          plot.title = element_text(size = 24),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 16))
+
+plot3
+
+```
+

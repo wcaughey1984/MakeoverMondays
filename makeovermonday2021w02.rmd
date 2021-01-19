@@ -1,0 +1,101 @@
+---
+title: "Makeover Monday 2021, Week 2"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+
+##### Libraries #####
+
+library(flexdashboard)
+library(tidyverse) 
+library(Amelia)
+
+##### Pre-Processing #####
+
+file_url <- "https://query.data.world/s/2bnbe3zaxn2w2w72xisuwcenvjx5r5"
+df <- read.csv(file_url, 
+               header=TRUE, 
+               stringsAsFactors=FALSE) 
+
+## Review structure ##
+
+str(df)
+
+## Put it together ##
+
+df1 <- df %>%
+    rename(region = UNICEF.Region,
+           new_hiv_infection_per_1000 = Estimated.incidence.rate.of.new.HIV.infection.per.1.000.uninfected.population,
+           gender = Sex,
+           year = Year,
+           aids_related_deaths_per_100000 = Estimated.rate.of.annual.AIDS.related.deaths..per.100.000.population) %>%
+    select(region, gender, year, 
+           new_hiv_infection_per_1000, aids_related_deaths_per_100000) %>%
+    group_by(region, gender, year) %>%
+    summarize(new_hiv_infection_per_1000_avg = mean(new_hiv_infection_per_1000, na.rm = T),
+              aids_related_deaths_per_100000_avg = mean(aids_related_deaths_per_100000, na.rm = T)) %>%
+    mutate(region = ifelse(region == "Eastern and Southern Africa",
+                           "Eastern and \nSouthern Africa",
+                           "West and \nCentral Africa"))
+
+
+```
+
+This week's makeover is about HIV infections in Africa. Specifically, we consider new HIV infections and AIDs related deaths. A few key points from this information:
+
+- Young ladies, specifically in Eastern and Southern Africa, have the highest new infection rates from 1990-2020. These infection rates, although decreasing, are still higher than any other new infection rate.
+- The lag in AIDs related deaths coincide with the high infection rates in the 1990's. 
+- Eastern and Southern Africa have higher aides related deaths per 100,000 from 1990 - 2020. These rates peaked in the mid 2000's, but are still higher than West and Central Africa.
+- Within the Eastern and Southern African regions, young women have a higher death rate than young men do. 
+
+Based on these figures, the young women of Africa need help and support. 
+
+
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### New Infections
+
+```{r}
+
+df1 %>%
+    ggplot(aes(x = year, y = new_hiv_infection_per_1000_avg)) +
+    geom_line(size = 2) +
+    theme_bw() +
+    labs(y = "New Infections Per 1,000 (Avg)",
+         title = "New HIV Infections Per 1,000 (Avg)\n1990 - 2020") +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 12, angle = 45, vjust = 0.5),
+          axis.title.y = element_text(size = 16),
+          axis.text.y = element_text(size = 12, angle = 45, vjust = 0.5),
+          strip.text = element_text(size = 16),
+          plot.title = element_text(size = 18)) +
+    facet_grid(region ~ gender)
+
+```
+
+### Related Deaths
+
+```{r}
+
+df1 %>%
+    ggplot(aes(x = year, y = aids_related_deaths_per_100000_avg)) +
+    geom_line(size = 2) +
+    theme_bw() +
+    labs(y = "Deaths per 100,000 (Avg)",
+         title = "Aids related deaths per 100,000 (Avg)\n1990 - 2020") +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(size = 12, angle = 45, vjust = 0.5),
+          axis.title.y = element_text(size = 16),
+          axis.text.y = element_text(size = 12, angle = 45, vjust = 0.5),
+          strip.text = element_text(size = 16),
+          plot.title = element_text(size = 18)) +
+    facet_grid(region ~ gender)
+
+```
+

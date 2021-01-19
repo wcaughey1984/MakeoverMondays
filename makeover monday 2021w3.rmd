@@ -1,0 +1,69 @@
+---
+title: "Makeover Monday, 2021 Week 3"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+
+##### Libraries #####
+
+library(flexdashboard)
+library(tidyverse) 
+
+##### Pre-Processing #####
+
+months_to_seasons <- function(x){
+    
+    if(x %in% c("Mar", "Apr", "May")){
+        return("Spring")
+    } else if(x %in% c("Jun", "Jul", "Aug")){
+        return("Summer")
+    } else if(x %in% c("Sep", "Oct", "Nov")){
+        return("Fall")
+    } else if(x %in% c("Dec", "Jan", "Feb")){
+        return("Winter")
+    }
+    
+}
+
+file_loc <- "https://query.data.world/s/fsmi4inacindztp6iybli5kbysm6lx"
+df <- read.csv(file_loc, 
+               header = TRUE, 
+               stringsAsFactors = FALSE) %>%
+    select(Hemisphere:Dec) %>%
+    gather(key = "months", value = "temps", Jan:Dec) %>%
+    mutate(months = factor(months,
+                           levels = c("Jan", "Feb", "Mar", "Apr", 
+                                      "May", "Jun", "Jul", "Aug",
+                                      "Sep", "Oct", "Nov", "Dec")),
+           seasons = factor(sapply(X = months, FUN = months_to_seasons),
+                            levels = c("Spring", "Summer", 
+                                       "Fall", "Winter")))
+```
+
+This weeks makeover is about global warming. The question I asked was is the northern or southern hemisphere driving the global trend. Based on the figures, the northern hemisphere appears to be driving the global trends. Since the mid-1970's, the northern hemisphere has seeing an almost exponential increase in temperature. Across all seasons, the northern hemisphere has seen an increase in temperature compared to the southern hemisphere. In fact, the observed increase in the northern hemisphere is accelerating faster than the southern hemisphere.
+
+### Temperature vs Region by Season
+
+```{r}
+
+df %>%
+    group_by(Hemisphere, Year, seasons) %>%
+    summarise(temps = mean(temps, na.rm = T)) %>%
+    ungroup() %>%
+    ggplot(aes(x = Year, y = temps, color = seasons)) +
+    geom_line(alpha = 0.6) +
+    stat_smooth(se = F, size = 1) +
+    facet_grid(Hemisphere ~ seasons) +
+    theme_bw() +
+    labs(y = "Temperature",
+         title = "Temperature vs Region by Season\n1880-2020") +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_text(angle = 90),
+          legend.title = element_blank())
+
+```
+
