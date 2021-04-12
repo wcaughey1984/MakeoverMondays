@@ -1,0 +1,129 @@
+---
+title: "Makeover Monday 2021w5 - Fuel Resources by European Region"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+
+##### Libraries #####
+
+library(flexdashboard)
+library(tidyverse)
+library(httr)
+library(readxl)
+library(scales)
+library(kableExtra)
+
+##### Import Data #####
+
+url <- "https://query.data.world/s/elmc5b27izmkphj6fi3py3hpcpqnra"
+invisible(capture.output(GET(url, write_disk(tf <- tempfile(fileext = ".xlsx")))))
+df <- read_excel(tf)
+
+##### Pre-Processing #####
+
+# functions 
+
+area_to_region <- function(x){
+	
+	# Function to return which region a European country belongs to
+	if(x %in% c("Denmark", "Estonia", "Finland", "Ireland", "Latvia", 
+				"Lithuania", "Sweden", "United Kindgom")){
+		return("Northern Europe")
+	} else if(x %in% c("Austria", "Belgium", "Germany", "Luxembourg", 
+					   "Netherlands")){
+		return("Western Europe")
+	} else if(x %in% c("Bulgaria", "Czech Republic", "Hungary", "Poland",
+					   "Romania", "Slovakia")){
+		return("Eastern Europe")
+	} else if(x %in% c("EU-27", "EU27+1")){
+		return("drop")
+	} else {
+		return("Southern Europe")
+	}
+	
+}
+
+# Group countries into regions 
+
+mm5_data <- df %>%
+	# Convert Countries to Regions
+	mutate(Region = sapply(X = Area, FUN = area_to_region)) %>%
+	select(Region, Variable, Year, `Generation (TWh)`) %>%
+	# Aggregate Total and Average TWh per Region
+	group_by(Region, Variable, Year) %>%
+	summarize(total_twh = sum(`Generation (TWh)`, na.rm = T),
+			  avg_twh = mean(`Generation (TWh)`, na.rm = T),
+			  .groups = "drop") %>%
+	# Only consider 4 regions and 4 fuel methods
+	filter(Variable %in% c("Renewables","Fossil", "Wind and solar", "Coal"),
+		   Region != "drop") %>%
+	# Compute Pct Change 
+	arrange(Region, Variable, Year) %>%
+	group_by(Region, Variable) %>%
+	mutate(total_twh_pct = (total_twh / lag(total_twh) - 1),
+		   avg_twh_pct = (avg_twh / lag(avg_twh) - 1)) %>%
+	filter(Year >= 2010)
+
+```
+
+Column {data-width=600}
+-----------------------------------------------------------------------
+
+### Percent Change of Resource Use by Region since 2010
+
+```{r}
+
+mm5_data %>%
+	ggplot(aes(x = Year, y = total_twh_pct, color = Region)) +
+	geom_line() +
+	geom_point() +
+	labs(y = "Total TWh (Pct Change)") +
+	scale_x_continuous(breaks = pretty_breaks()) +
+	scale_y_continuous(label = percent) +
+	theme_bw() +
+	theme(axis.title.x = element_blank(),
+		  #axis.text.x = element_text(angle = 45),
+		  legend.title = element_blank(),
+		  legend.position = "bottom") +
+	facet_wrap(. ~ Variable, 
+			   scales = "free_y") 
+
+```
+
+
+Column{data-width=400}
+-----------------------------------------------------------------------
+
+### Total TWh by Resource by Region since 2010
+
+```{r}
+
+mm5_data %>%
+	select(Region, total_twh, Variable) %>%
+	group_by(Region, Variable) %>%
+	summarize(total_twh_all_years = round(sum(total_twh, na.rm = T),2),
+			  .groups = "drop") %>%
+	spread(Variable, total_twh_all_years) %>%
+	kable(digits = 3, format.args = list(big.mark = ",", scientific = FALSE)) %>%
+	kable_styling(bootstrap_options = c("striped"))
+
+```
+
+### Average TWh by Resource by Region since 2010
+
+```{r}
+
+mm5_data %>%
+	select(Region, total_twh, Variable) %>%
+	group_by(Region, Variable) %>%
+	summarize(total_twh_all_years = round(mean(total_twh, na.rm = T),2),
+			  .groups = "drop") %>%
+	spread(Variable, total_twh_all_years) %>%
+	kable(digits = 3, format.args = list(big.mark = ",", scientific = FALSE)) %>%
+	kable_styling(bootstrap_options = c("striped"))
+
+```
